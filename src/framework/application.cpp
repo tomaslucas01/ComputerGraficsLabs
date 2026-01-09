@@ -32,7 +32,18 @@ void Application::Init(void)
 void Application::Render(void)
 {
 	// ...
+	framebuffer.Fill(Color::BLACK);
 
+	/*int x = 200;
+	int y = 200;
+	framebuffer.DrawLineDDA(x, y, x + 100 * cos(time), y + 100 * sin(time), Color(255, 80, 100));*/
+
+	Vector2 p0(500, 400);
+	Vector2 p1(800, 400);
+	Vector2 p2(650, 650);
+	framebuffer.DrawTriangle(p0, p1, p2, Color(200, 200, 200), true, Color(30, 100, 150));
+
+	// framebuffer.DrawRect(100, 200, 50, 50, Color(255, 0, 0), 2, false, Color(0, 255, 0));
 	framebuffer.Render();
 }
 

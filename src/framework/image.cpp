@@ -9,6 +9,7 @@
 #include "camera.h"
 #include "mesh.h"
 
+
 Image::Image() {
 	width = 0; height = 0;
 	pixels = NULL;
@@ -325,6 +326,102 @@ bool Image::SaveTGA(const char* filename)
 
 	return true;
 }
+
+void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor,
+	int borderWidth, bool isFilled, const Color& fillColor) {
+	
+	Color finalFill = isFilled ? fillColor : Color();
+
+	for (unsigned int i = 0; i < w; ++i) {
+		for (unsigned int j = 0; j < h; ++j) {
+			Color temp;
+			if (i < borderWidth || i >= (w - borderWidth) || j < borderWidth || j >= (h - borderWidth)) {
+				SetPixel(x + i, y + j, borderColor);
+				temp = borderColor;
+			}
+			else {
+				SetPixel(x + i, y + j, finalFill);
+			}
+		}
+	}
+};
+
+void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c) {
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+
+	int d = std::max(abs(dx), abs(dy));
+
+	if (d == 0) { // Just in case
+		return;
+	}
+
+	Vector2 v(float(dx) / d, float(dy) / d);
+
+	float x = x0;
+	float y = y0;
+
+	for (int i = 0; i < d; ++i) {
+		SetPixel(x, y, c);
+		x += v.x;
+		y += v.y;
+	}
+}
+
+void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<Cell>& table) {
+	// Fill values like a regular array
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+
+	int d = std::max(abs(dx), abs(dy));
+
+	if (d == 0) {
+		return;
+	}
+
+	Vector2 v(float(dx) / d, float(dy) / d);
+
+	float x = x0;
+	float y = y0;
+
+	for (int i = 0; i < d; ++i) {
+		int ix = int(x + 0.5f); // Adding 0.5 makes so that negative numbers are rounded correctly
+		int iy = int(y + 0.5f);
+		if (iy >= 0 && iy < height) {
+			table[iy].minx = std::min(table[iy].minx, ix);
+			table[iy].maxx = std::max(table[iy].maxx, ix);
+		}
+
+		x += v.x;
+		y += v.y;
+	}
+	
+}
+
+
+void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor) {
+	std::vector<Cell> table;
+	table.resize(height);
+	
+	ScanLineDDA(p0.x, p0.y, p1.x, p1.y, table); // Line p0-p1
+	ScanLineDDA(p1.x, p1.y, p2.x, p2.y, table); // Line p1-p2
+	ScanLineDDA(p2.x, p2.y, p0.x, p0.y, table); // Line p2-p0
+
+	for (int i = 0; i < height; ++i) {
+		if (table[i].minx <= table[i].maxx) {
+			for (int j = table[i].minx; j < table[i].maxx; ++j) {
+				if (j == table[i].minx || j == table[i].maxx-1) {
+					SetPixel(j, i, borderColor);
+				}
+				else if (isFilled) {
+					SetPixel(j, i, fillColor);
+				}
+			}
+		}
+	}
+}
+
+
 
 #ifndef IGNORE_LAMBDAS
 

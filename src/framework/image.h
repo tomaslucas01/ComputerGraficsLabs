@@ -38,6 +38,11 @@ public:
 
 	Color* pixels;
 
+	struct Cell {
+		int minx = INT_MAX;
+		int maxx = INT_MIN;
+	};
+
 	// Constructors
 	Image();
 	Image(unsigned int width, unsigned int height);
@@ -77,6 +82,14 @@ public:
 	bool LoadPNG(const char* filename, bool flip_y = true);
 	bool LoadTGA(const char* filename, bool flip_y = false);
 	bool SaveTGA(const char* filename);
+
+	void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor,
+		int borderWidth, bool isFilled, const Color& fillColor);
+
+	void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c);
+	void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<Cell>& table);
+	void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor);
+
 
 	// Used to easy code
 	#ifndef IGNORE_LAMBDAS
