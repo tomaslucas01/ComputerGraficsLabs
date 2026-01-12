@@ -421,6 +421,14 @@ void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2
 	}
 }
 
+void Image::DrawImage(const Image& image, int x, int y) {
+	for (int i = x; i < x + image.width; ++i) {
+		for (int j = y; j < y + image.height; ++j) {
+			SetPixel(i, j, image.GetPixel(i - x, j - y));
+		}
+	}
+}
+
 
 
 #ifndef IGNORE_LAMBDAS

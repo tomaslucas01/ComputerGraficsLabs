@@ -90,6 +90,8 @@ public:
 	void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<Cell>& table);
 	void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor);
 
+	void Image::DrawImage(const Image& image, int x, int y);
+
 
 	// Used to easy code
 	#ifndef IGNORE_LAMBDAS
