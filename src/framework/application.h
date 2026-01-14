@@ -7,6 +7,7 @@
 #include "main/includes.h"
 #include "framework.h"
 #include "image.h"
+#include "button.h"
 
 class Application
 {
@@ -19,6 +20,15 @@ public:
 	int window_height;
 
 	float time;
+
+	// Defined by us ----
+	std::vector<Button> buttons;
+	Button::ButtonType current_action;
+	Color current_color;
+
+
+
+	// ------------------
 
 	// Input
 	const Uint8* keystate;
