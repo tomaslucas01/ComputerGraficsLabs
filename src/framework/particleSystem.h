@@ -7,7 +7,7 @@
 
 class ParticleSystem {
 
-    static const int MAX_PARTICLES = 50; //A VALUE THAT WE CHOOSE
+    static const int MAX_PARTICLES = 1500; //A VALUE THAT WE CHOOSE
 
     struct Particle {
         Vector2 position;
@@ -21,7 +21,7 @@ class ParticleSystem {
     Particle particles[MAX_PARTICLES];
 
 public:
-    void Init();
+    void Init(int width, int height);
     void Render(Image* framebuffer);
-    void Update(float dt);
+    void Update(float time, float dt, int window_width, int window_height);
 };

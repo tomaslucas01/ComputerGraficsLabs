@@ -16,7 +16,7 @@ const Color Color::GREEN(0,255,0);
 const Color Color::BLUE(0,0,255);
 const Color Color::YELLOW(255,255,0);
 const Color Color::CYAN(0,255,255);
-const Color Color::PURPLE(255,0,255);
+const Color Color::PINK(255,0,255);
 
 void Color::operator = (const Vector3& v)
 {

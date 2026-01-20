@@ -22,7 +22,7 @@ public:
 		TRIANGLE,
 		BLACK,
 		WHITE,
-		PINK,
+		MAGENTA,
 		YELLOW,
 		RED,
 		BLUE,
