@@ -19,6 +19,8 @@ Application::Application(const char* caption, int width, int height)
 	this->framebuffer.Resize(w, h);
 	this->current_action = Button::PENCIL;
 	this->current_color = Color::RED;
+	this->fill_shapes = true;
+	this->border_width = 1;
 
 	Image i1;
 	i1.LoadPNG("../res/images/clear.png");
@@ -76,7 +78,7 @@ Application::Application(const char* caption, int width, int height)
 
 	Image i11;
 	i11.LoadPNG("../res/images/pink.png");
-	buttons.push_back(Button(Button::MAGENTA, i11, Vector2(10 + i1.width * 11, 10)));
+	buttons.push_back(Button(Button::PINK, i11, Vector2(10 + i1.width * 11, 10)));
 
 	Image i12;
 	i12.LoadPNG("../res/images/cyan.png");
@@ -104,7 +106,7 @@ void Application::Init(void)
 	std::cout << "Initiating app..." << std::endl;
 
 	framebuffer.Fill(Color::BLACK);
-	Vector2 p0(500, 400);
+	Vector2 p0(500, 200);
 	Vector2 p1(800, 400);
 	Vector2 p2(650, 650);
 	framebuffer.DrawTriangle(p0, p1, p2, Color(200, 200, 200), true, Color(30, 100, 150));
@@ -136,58 +138,64 @@ void Application::Update(float seconds_elapsed)
 //keyboard press event 
 void Application::OnKeyPressed( SDL_KeyboardEvent event )
 {
-
 	// KEY CODES: https://wiki.libsdl.org/SDL2/SDL_Keycode
 	switch(event.keysym.sym) {
 		case SDLK_ESCAPE: exit(0); break; // ESC key, kill the app
+		case SDLK_f: fill_shapes = !fill_shapes; break;// Alternate between filled an not filled
+		case SDLK_PLUS: border_width++; break;
+		case SDLK_MINUS: border_width = (border_width == 1 ? 1 : border_width-1); break;
 	}
 }
 
-void Application::OnMouseButtonDown( SDL_MouseButtonEvent event )
+void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)
 {
 	if (event.button == SDL_BUTTON_LEFT) {
+		old_mouse_position = mouse_position;
+
 		for (Button& b : buttons) {
 			if (b.IsMouseInside(mouse_position)) {
 				switch (b.type) {
-					case Button::CLEAR_IMG:
-						framebuffer.Fill(Color::BLACK);
-						break;
-					case Button::LOAD_IMG:
-						// Load?
-						break;
-					case Button::SAVE_IMG:
-						// TODO
-						// framebuffer.SaveTGA("../res/images/blabla.png");
-						break;
-					case Button::PENCIL:
-					case Button::ERASER:
-					case Button::LINE:
-					case Button::RECTANGLE:
-					case Button::CIRCLE:
-					case Button::TRIANGLE:
-						current_action = b.type;
-						break;
-					case Button::BLACK:
-						current_color = Color::BLACK;
-						break;
-					case Button::WHITE:
-						current_color = Color::WHITE;
-						break;
-					case Button::MAGENTA:
-						current_color = Color(255, 255, 0);
-						break;
-					case Button::YELLOW:
-						current_color = Color::YELLOW;
-						break;
-					case Button::RED:
-						current_color = Color::RED;
-						break;
-					case Button::BLUE:
-						current_color = Color::BLUE;
-						break;
-					case Button::CYAN:
-						current_color = Color::CYAN;
-						break;
+				case Button::CLEAR_IMG:
+					framebuffer.Fill(Color::BLACK);
+					break;
+				case Button::LOAD_IMG: {
+					Image temp;
+					temp.LoadTGA("../res/images/output.tga", true);
+					framebuffer.DrawImage(temp, (window_width / 2) - temp.width/2, (window_height / 2) - temp.height/2);
+					break;
+				}
+				case Button::SAVE_IMG:
+					framebuffer.SaveTGA("../res/images/output.tga");
+					break;
+				case Button::PENCIL:
+				case Button::ERASER:
+				case Button::LINE:
+				case Button::RECTANGLE:
+				//case Button::CIRCLE: optional
+				case Button::TRIANGLE:
+					current_action = b.type;
+					break;
+				case Button::BLACK:
+					current_color = Color::BLACK;
+					break;
+				case Button::WHITE:
+					current_color = Color::WHITE;
+					break;
+				case Button::PINK:
+					current_color = Color::PURPLE;
+					break;
+				case Button::YELLOW:
+					current_color = Color::YELLOW;
+					break;
+				case Button::RED:
+					current_color = Color::RED;
+					break;
+				case Button::BLUE:
+					current_color = Color::BLUE;
+					break;
+				case Button::CYAN:
+					current_color = Color::CYAN;
+					break;
 				}
 
 				std::cout << "(" << int(current_color.r) << ", " << int(current_color.g) << ", " << int(current_color.b) << ")";
@@ -196,16 +204,47 @@ void Application::OnMouseButtonDown( SDL_MouseButtonEvent event )
 	}
 }
 
-void Application::OnMouseButtonUp( SDL_MouseButtonEvent event )
+void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
 {
 	if (event.button == SDL_BUTTON_LEFT) {
+		if (current_action == Button::LINE) {
+			framebuffer.DrawLineDDA(old_mouse_position.x, old_mouse_position.y, mouse_position.x, mouse_position.y, current_color);
+		}
+		else if (current_action == Button::RECTANGLE) {
+			float start_x = std::min(old_mouse_position.x, mouse_position.x); // min x?
+			float start_y = std::min(old_mouse_position.y, mouse_position.y); // min y?
+			int width = std::abs(mouse_position.x - old_mouse_position.x); // width in absolute value (if not, the rectangle does not appear correctly)
+			int height = std::abs(mouse_position.y - old_mouse_position.y); // height in absolute value (same as before)
+			framebuffer.DrawRect(start_x, start_y, width, height, Color::WHITE, border_width, fill_shapes, current_color);
+		}
+		else if (current_action == Button::TRIANGLE) {
+			float x_min = std::min(old_mouse_position.x, mouse_position.x); //Know which is x_min
+			float x_max = std::max(old_mouse_position.x, mouse_position.x); //Know which is x_max
+			float y_min = std::min(old_mouse_position.y, mouse_position.y); //Know which is y_min
+			float y_max = std::max(old_mouse_position.y, mouse_position.y); //Know which is y_max
 
+			Vector2 p0(x_min, y_min);                         //Left corner in (x_min, y_min)
+			Vector2 p1(x_max, y_min);                         //Right corner in (x_max,y_min
+			Vector2 p2((x_min + x_max) / 2, y_max);        //Center corner above, in (averagex, y_max)
+
+			framebuffer.DrawTriangle(p0, p1, p2, Color::WHITE, fill_shapes, current_color);
+		}
 	}
 }
 
 void Application::OnMouseMove(SDL_MouseButtonEvent event)
 {
-	
+	//Idea
+	if (mouse_state != 0) {
+		if (current_action == Button::PENCIL) {
+			framebuffer.DrawRect(mouse_position.x, mouse_position.y, 10, 10, current_color, 0, true, current_color);
+		}
+
+		else if (current_action == Button::ERASER) {
+			framebuffer.DrawRect(mouse_position.x, mouse_position.y, 15, 15, Color::BLACK, 0, true, Color::BLACK);
+		}
+
+	}
 }
 
 void Application::OnWheel(SDL_MouseWheelEvent event)

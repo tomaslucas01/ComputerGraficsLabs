@@ -330,17 +330,26 @@ bool Image::SaveTGA(const char* filename)
 void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor,
 	int borderWidth, bool isFilled, const Color& fillColor) {
 	
-	Color finalFill = isFilled ? fillColor : Color();
+	if (borderWidth > w || borderWidth > h) borderWidth = std::min(w, h);
 
-	for (unsigned int i = 0; i < w; ++i) {
-		for (unsigned int j = 0; j < h; ++j) {
-			Color temp;
-			if (i < borderWidth || i >= (w - borderWidth) || j < borderWidth || j >= (h - borderWidth)) {
-				SetPixel(x + i, y + j, borderColor);
-				temp = borderColor;
+	if (isFilled) {
+		for (unsigned int i = 0; i < w; ++i) {
+			for (unsigned int j = 0; j < h; ++j) {
+				if (i < borderWidth || i >= (w - borderWidth) || j < borderWidth || j >= (h - borderWidth)) {
+					SetPixel(x + i, y + j, borderColor);
+				}
+				else {
+					SetPixel(x + i, y + j, fillColor);
+				}
 			}
-			else {
-				SetPixel(x + i, y + j, finalFill);
+		}
+	}
+	else { // We have some repeated code, but this way we only check the "isFilled" once and not for every pixel
+		for (unsigned int i = 0; i < w; ++i) {
+			for (unsigned int j = 0; j < h; ++j) {
+				if (i < borderWidth || i >= (w - borderWidth) || j < borderWidth || j >= (h - borderWidth)) {
+					SetPixel(x + i, y + j, borderColor);
+				}
 			}
 		}
 	}
@@ -407,15 +416,15 @@ void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2
 	ScanLineDDA(p1.x, p1.y, p2.x, p2.y, table); // Line p1-p2
 	ScanLineDDA(p2.x, p2.y, p0.x, p0.y, table); // Line p2-p0
 
+	int min_y = std::min(std::min(p0.y, p1.y), p2.y);
+
 	for (int i = 0; i < height; ++i) {
-		if (table[i].minx <= table[i].maxx) {
-			for (int j = table[i].minx; j < table[i].maxx; ++j) {
-				if (j == table[i].minx || j == table[i].maxx-1) {
-					SetPixel(j, i, borderColor);
-				}
-				else if (isFilled) {
-					SetPixel(j, i, fillColor);
-				}
+		for (int j = table[i].minx; j < table[i].maxx; ++j) {
+			if (j <= table[i].minx || j >= table[i].maxx - 1 || i == min_y) {
+				SetPixel(j, i, borderColor);
+			}
+			else if (isFilled) {
+				SetPixel(j, i, fillColor);
 			}
 		}
 	}

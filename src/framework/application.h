@@ -25,6 +25,9 @@ public:
 	std::vector<Button> buttons;
 	Button::ButtonType current_action;
 	Color current_color;
+	Vector2 old_mouse_position;
+	bool fill_shapes;
+	unsigned int border_width;
 
 
 
