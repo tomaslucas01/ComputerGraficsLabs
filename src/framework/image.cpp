@@ -336,7 +336,7 @@ void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor,
 		for (unsigned int i = 0; i < w; ++i) {
 			for (unsigned int j = 0; j < h; ++j) {
 				if (i < borderWidth || i >= (w - borderWidth) || j < borderWidth || j >= (h - borderWidth)) {
-					SetPixel(x + i, y + j, borderColor);
+					SetPixel(x + i, y + j, borderColor); // If x or y value is in border range
 				}
 				else {
 					SetPixel(x + i, y + j, fillColor);
@@ -359,13 +359,13 @@ void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c) {
 	int dx = x1 - x0;
 	int dy = y1 - y0;
 
-	int d = std::max(abs(dx), abs(dy));
+	int d = std::max(abs(dx), abs(dy)); // Choose what distance we'll travel
 
-	if (d == 0) { // Just in case
+	if (d == 0) { // Check extreme case
 		return;
 	}
 
-	Vector2 v(float(dx) / d, float(dy) / d);
+	Vector2 v(float(dx) / d, float(dy) / d); // Define step increase
 
 	float x = x0;
 	float y = y0;
@@ -378,7 +378,9 @@ void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c) {
 }
 
 void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<Cell>& table) {
-	// Fill values like a regular array
+	// Extremely similar to regular DDA, but instead of SetPixel
+	// we update the table's cells min and max x
+
 	int dx = x1 - x0;
 	int dy = y1 - y0;
 
@@ -397,8 +399,8 @@ void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<Cell>& table
 		int ix = int(x + 0.5f); // Adding 0.5 makes so that negative numbers are rounded correctly
 		int iy = int(y + 0.5f);
 		if (iy >= 0 && iy < height) {
-			table[iy].minx = std::min(table[iy].minx, ix);
-			table[iy].maxx = std::max(table[iy].maxx, ix);
+			table[iy].minx = std::min(table[iy].minx, ix);	// If x value is less than cell's min, update
+			table[iy].maxx = std::max(table[iy].maxx, ix);	// Same for max
 		}
 
 		x += v.x;
@@ -412,11 +414,16 @@ void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2
 	std::vector<Cell> table;
 	table.resize(height);
 	
-	ScanLineDDA(p0.x, p0.y, p1.x, p1.y, table); // Line p0-p1
-	ScanLineDDA(p1.x, p1.y, p2.x, p2.y, table); // Line p1-p2
-	ScanLineDDA(p2.x, p2.y, p0.x, p0.y, table); // Line p2-p0
+	ScanLineDDA(p0.x, p0.y, p1.x, p1.y, table); // Update table's cells values with line p0-p1
+	ScanLineDDA(p1.x, p1.y, p2.x, p2.y, table); // For line p1-p2
+	ScanLineDDA(p2.x, p2.y, p0.x, p0.y, table); // For line p2-p0
 
-	int min_y = std::min(std::min(p0.y, p1.y), p2.y);
+
+	// Useful for triangles that have their base parallel to screen rows.
+	// If not included, the base would not get a border printed.
+
+	int min_y = std::min(std::min(p0.y, p1.y), p2.y); 
+
 
 	for (int i = 0; i < height; ++i) {
 		for (int j = table[i].minx; j < table[i].maxx; ++j) {
@@ -430,10 +437,11 @@ void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2
 	}
 }
 
+// Used for both drawing button images and loaded bit map images
 void Image::DrawImage(const Image& image, int x, int y) {
 	for (int i = x; i < x + image.width; ++i) {
 		for (int j = y; j < y + image.height; ++j) {
-			SetPixel(i, j, image.GetPixel(i - x, j - y));
+			SetPixel(i, j, image.GetPixel(i - x, j - y)); // Print in curr image the pixel at (i-x, j-y) of given image
 		}
 	}
 }
