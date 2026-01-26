@@ -8,7 +8,8 @@
 #include "framework.h"
 #include "image.h"
 #include "button.h"
-#include "ParticleSystem.h"
+#include "particleSystem.h"
+#include "entity.h"
 
 class Application
 {
@@ -23,18 +24,9 @@ public:
 	float time;
 
 	// Defined by us ----
-	std::vector<Button> buttons;
-	Button::ButtonType current_action;
-	Color current_color;
-	Vector2 old_mouse_position;
-	bool fill_shapes;
-	unsigned int border_width;
-	int paintwidth;
-	int paintheight;
-	int mode;
-	ParticleSystem ps;
-
-
+	
+	Camera camera;
+	Entity e;
 
 	// ------------------
 
