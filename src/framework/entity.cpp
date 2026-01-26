@@ -56,22 +56,8 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 
 }
 
-/*void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
-	std::vector<Vector3> v = mesh->GetVertices();
-
-	for (Vector3 c : mesh->GetVertices()) {
-		Vector4 p = Vector4(c.x, c.y, c.z, 1);
-
-		p = this->matrix * p; // Project to world space
-
-		camera->ProjectVector(p.GetVector3());
-
-		if (p.x > 1 || p.x < -1 ||
-			p.y > 1 || p.y < -1 ||
-			p.z > 1 || p.z < -1) return;
-
-		p.x = (p.x + 1.0) / 2.0;
-		p.y = (p.y + 1.0) / 2.0;
-		p.z = (p.z + 1.0) / 2.0;
-	}
-}*/
+void Entity::Update(float seconds_elapsed) {
+	Matrix44 R = Matrix44();
+	R.MakeRotationMatrix(seconds_elapsed, Vector3(0, 1, 0));
+	matrix = matrix * R;
+}

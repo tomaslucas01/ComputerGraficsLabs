@@ -20,20 +20,52 @@ Application::Application(const char* caption, int width, int height)
 
 	this->camera = Camera();
 
-	Vector3 eye = Vector3(0, 0, 1);
-	Vector3 center = Vector3(0, 0, 0);
-	Vector3 up = Vector3(0, 1, 0);  
+	eye = Vector3(0, -1, 5);
+	center = Vector3(0, 0, 0);
+	up = Vector3(0, 1, 0);  
 
 	this->camera.LookAt(eye, center, up);
+	this->camera.SetAspectRatio(float(width) / float(height));
+	
+	/*this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
+	
 
-	this->camera.SetOrthographic(-10, 10, 10, -10, 0.1f, 10.f);
+	Matrix44 anna_m = Matrix44();
+	int scale = 20;
+	anna_m.MakeScaleMatrix(scale, scale, scale);
+	anna_m.M[3][1] = -3;
+	
+	Matrix44 cleo_m = anna_m;
+	Matrix44 lee_m = anna_m;
+
+	anna_m.M[3][0] = -6;
+	lee_m.M[3][0] = 6;*/
 
 
-	Matrix44 model_matrix = Matrix44();
-	model_matrix.SetIdentity();
-	model_matrix.MakeScaleMatrix(10, 10, 10);
 
-	e = Entity("../res/meshes/cleo.obj", model_matrix);
+	// Perspective
+
+	this->camera.SetPerspective(60, this->camera.aspect, 0.1f, 10.f);
+
+	Matrix44 anna_m = Matrix44();
+	int scale = 6;
+	anna_m.MakeScaleMatrix(scale, scale, scale);
+	anna_m.M[3][1] = -3;
+
+	Matrix44 cleo_m = anna_m;
+	Matrix44 lee_m = anna_m;
+
+	anna_m.M[3][0] = -2;
+	cleo_m.M[3][2] = -10;
+	lee_m.M[3][0] = 2;
+	
+	Entity anna = Entity("../res/meshes/anna.obj", anna_m);
+	Entity cleo = Entity("../res/meshes/cleo.obj", cleo_m);
+	Entity lee = Entity("../res/meshes/lee.obj", lee_m);
+
+	entities.push_back(anna);
+	entities.push_back(cleo);
+	entities.push_back(lee);
 }
 
 Application::~Application()
@@ -50,8 +82,21 @@ void Application::Init(void)
 
 // Render one frame
 void Application::Render(void)
-{	
-	e.Render(&framebuffer, &camera, Color(255, 0, 0));
+{
+	framebuffer.Fill(Color::BLACK);
+	entities[0].Render(&framebuffer, &camera, Color(255, 0, 0));
+	entities[1].Render(&framebuffer, &camera, Color(255, 255, 255));
+	entities[2].Render(&framebuffer, &camera, Color(0, 0, 255));
+
+	
+	framebuffer.Fill(Color::BLACK);
+	this->camera.LookAt(eye, center, up);
+
+	entities[0].Render(&framebuffer, &camera, Color(255, 0, 0));
+	entities[1].Render(&framebuffer, &camera, Color(255, 255, 255));
+	entities[2].Render(&framebuffer, &camera, Color(0, 0, 255));
+	
+
 	framebuffer.Render();
 }
 
@@ -59,7 +104,12 @@ void Application::Render(void)
 // Called after render
 void Application::Update(float seconds_elapsed)
 {
-	// camera.UpdateViewMatrix();
+	// this->camera.SetAspectRatio(float(window_width) / float(window_height));
+	// this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
+
+	for (Entity& e : entities) {
+		e.Update(seconds_elapsed);
+	}
 	//Update the particles
 }
 
@@ -69,7 +119,14 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 {
 	// KEY CODES: https://wiki.libsdl.org/SDL2/SDL_Keycode
 	switch (event.keysym.sym) {
-		
+		case SDLK_ESCAPE: exit(0); break;
+		case SDLK_PLUS: eye.z++; break;
+		case SDLK_MINUS: eye.z--; break;
+		case SDLK_1: mode = 1; framebuffer.Fill(Color::BLACK); break;
+		case SDLK_2: mode = 2; framebuffer.Fill(Color::BLACK); break;
+		case SDLK_n:
+		case SDLK_f:
+		case SDLK_v: break;
 	}
 }
 

@@ -26,7 +26,12 @@ public:
 	// Defined by us ----
 	
 	Camera camera;
-	Entity e;
+	std::vector<Entity> entities;
+	int orthographic_size = 10;
+	int mode = 1;
+	Vector3 eye;
+	Vector3 center;
+	Vector3 up;
 
 	// ------------------
 
