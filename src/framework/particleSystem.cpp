@@ -32,7 +32,8 @@ void ParticleSystem::Render(Image* framebuffer) {
 void ParticleSystem::Update(float time, float dt, int window_width, int window_height) {
 	for (int i = 0; i < MAX_PARTICLES; i++) {
 		if (particles[i].inactive == false) { //If the particle is active, update its position, velocity and ttl
-			particles[i].position = particles[i].position + (Vector2(250.0 * dt, 250.0 * dt) * particles[i].velocity);			particles[i].velocity.x = 0.5 * sin(2 * time + i);
+			particles[i].position = particles[i].position + (Vector2(250.0 * dt, 250.0 * dt) * particles[i].velocity);
+			particles[i].velocity.x = 0.5 * sin(2 * time + i);
 			particles[i].ttl -= dt;
 			//If the particle is out of bounds or its ttl is over, the particle becomes inactive
 			if (particles[i].position.y < 0 || particles[i].ttl < 0) {

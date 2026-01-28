@@ -95,20 +95,26 @@ void Camera::UpdateViewMatrix()
 
 	// Create the view matrix rotation
 	// ...
-	Vector3 forward = Vector3(-center.x + eye.x, -center.y + eye.y, -center.z + eye.z).Normalize(); //center to eye and normalize
-	Vector3 right = up.Cross(forward).Normalize(); //Cross product and always normalize
-	Vector3 side = forward.Cross(right).Normalize();
-	view_matrix.M[0][0] = right.x;		view_matrix.M[1][0] = right.y;		view_matrix.M[2][0] = right.z;
-	view_matrix.M[1][0] = side.x;		view_matrix.M[1][1] = side.y;		view_matrix.M[1][2] = side.z;
-	view_matrix.M[2][0] = forward.x;	view_matrix.M[2][1] = forward.y;	view_matrix.M[2][2] = forward.z;
-	view_matrix.M[3][3] = 1.0;
+
+	Matrix44 R = Matrix44();
+	
+
+	Vector3 forward = (center - eye).Normalize(); //eye to center and normalize
+	Vector3 right = forward.Cross(up).Normalize(); //Cross product and always normalize
+	Vector3 up2 = right.Cross(forward).Normalize();
+
+	R.M[0][0] = right.x;	R.M[1][0] = right.y;	R.M[2][0] = right.z;
+	R.M[0][1] = up2.x;		R.M[1][1] = up2.y;		R.M[2][1] = up2.z;
+	R.M[0][2] = -forward.x;	R.M[1][2] = -forward.y;	R.M[2][2] = -forward.z;
+	R.M[3][3] = 1.0;
 
 	// Translate view matrix
 	// ...
+
 	Matrix44 T = Matrix44();
 	T.MakeTranslationMatrix(-this->eye.x, -this->eye.y, -this->eye.z);
 
-	view_matrix = view_matrix * T;
+	view_matrix = R * T;
 
 	UpdateViewProjectionMatrix();
 }

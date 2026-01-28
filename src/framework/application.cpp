@@ -20,13 +20,19 @@ Application::Application(const char* caption, int width, int height)
 
 	this->camera = Camera();
 
-	eye = Vector3(0, -1, 5);
+	eye = Vector3(0, 0, 5);
 	center = Vector3(0, 0, 0);
-	up = Vector3(0, 1, 0);  
+	up = Vector3(0, 1, 0);
+	radius = (eye - center).Length();
 
 	this->camera.LookAt(eye, center, up);
 	this->camera.SetAspectRatio(float(width) / float(height));
 	
+	//CASE WE MOVE THE CAMERA, WE USE THIS LINE OF CODE TO KNOW WHERE IS THE CENTER AND OUR ANGLE WITH THE CENTRE
+	//Vector3 dir = (eye - center).Normalize();
+	//angle = atan2(dir.z, dir.x);
+	angle = 90;
+
 	/*this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
 	
 
@@ -56,8 +62,13 @@ Application::Application(const char* caption, int width, int height)
 	Matrix44 lee_m = anna_m;
 
 	anna_m.M[3][0] = -2;
-	cleo_m.M[3][2] = -10;
+	anna_m.M[3][1] = -1;
+
+	cleo_m.M[3][2] = 0;
+	cleo_m.M[3][1] = -1;
+
 	lee_m.M[3][0] = 2;
+	lee_m.M[3][1] = -1.5;
 	
 	Entity anna = Entity("../res/meshes/anna.obj", anna_m);
 	Entity cleo = Entity("../res/meshes/cleo.obj", cleo_m);
@@ -107,9 +118,16 @@ void Application::Update(float seconds_elapsed)
 	// this->camera.SetAspectRatio(float(window_width) / float(window_height));
 	// this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
 
-	for (Entity& e : entities) {
-		e.Update(seconds_elapsed);
-	}
+	Matrix44 m;
+	m.MakeRotationMatrix(seconds_elapsed, Vector3(0, 1, 0));
+	entities[0].Update(seconds_elapsed, m);
+
+	m.MakeScaleMatrix(1.001, 1.001, 1.001);
+	entities[1].Update(seconds_elapsed, m);
+
+	m.MakeTranslationMatrix(0, 0.005 * sin(3*time), 0);
+	entities[2].Update(seconds_elapsed, m);
+
 	//Update the particles
 }
 
@@ -132,7 +150,14 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 
 void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)
 {
-	
+	if (event.button == SDL_BUTTON_LEFT) {
+
+		angle += 0.15;
+		eye.x = center.x + cos(angle) * radius;
+		eye.z = center.z + sin(angle) * radius;
+
+		camera.LookAt(eye, center, up);
+	}
 }
 void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
 {
@@ -148,7 +173,17 @@ void Application::OnWheel(SDL_MouseWheelEvent event)
 {
 	float dy = event.preciseY;
 
-	// ...
+	if (dy > 0)
+		radius -= 0.5f;   // zoom in
+	else if (dy < 0)
+		radius += 0.5f;   // zoom out
+
+	radius = std::max(radius, 0.5f); //we don't want to be inside the faces
+
+	eye.x = center.x + cos(angle) * radius;
+	eye.z = center.z + sin(angle) * radius;
+
+	camera.LookAt(eye, center, up);
 }
 
 void Application::OnFileChanged(const char* filename)

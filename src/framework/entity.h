@@ -13,5 +13,5 @@ public:
 	Entity::Entity();
 	Entity::Entity(const char * object, Matrix44 m);
 	void Entity::Render(Image* framebuffer, Camera* camera, const Color& c);
-	void Entity::Update(float seconds_elapsed);
+	void Entity::Update(float seconds_elapsed, Matrix44 transform_matrix);
 };

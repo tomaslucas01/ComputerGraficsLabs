@@ -32,6 +32,8 @@ public:
 	Vector3 eye;
 	Vector3 center;
 	Vector3 up;
+	float angle;
+	float radius;
 
 	// ------------------
 
