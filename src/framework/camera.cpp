@@ -131,10 +131,10 @@ void Camera::UpdateProjectionMatrix()
 	// Remember how to fill a Matrix4x4 (check framework slides)
 
 	if (type == PERSPECTIVE) {
-		float f = (1 / tan((PI / 180) * fov / 2));
+		float f = (1 / tan((fov * DEG2RAD) / 2));
 		projection_matrix.M[0][0] = f / aspect;
 		projection_matrix.M[1][1] = f;
-		projection_matrix.M[2][2] = (far_plane - near_plane) / (near_plane - far_plane);
+		projection_matrix.M[2][2] = (near_plane + far_plane) / (near_plane - far_plane);
 		projection_matrix.M[3][2] = 2 * (far_plane * near_plane) / (near_plane - far_plane);
 		projection_matrix.M[2][3] = -1;
 		// ...

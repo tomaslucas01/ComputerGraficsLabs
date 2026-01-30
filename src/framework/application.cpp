@@ -29,9 +29,11 @@ Application::Application(const char* caption, int width, int height)
 	this->camera.SetAspectRatio(float(width) / float(height));
 	
 	//CASE WE MOVE THE CAMERA, WE USE THIS LINE OF CODE TO KNOW WHERE IS THE CENTER AND OUR ANGLE WITH THE CENTRE
-	//Vector3 dir = (eye - center).Normalize();
-	//angle = atan2(dir.z, dir.x);
-	angle = 90;
+	Vector3 dir = (eye - center).Normalize();
+	angle = atan2(dir.z, dir.x);
+
+
+	// Orthographic view
 
 	/*this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
 	
@@ -51,7 +53,11 @@ Application::Application(const char* caption, int width, int height)
 
 	// Perspective
 
-	this->camera.SetPerspective(60, this->camera.aspect, 0.1f, 10.f);
+	px = 0.1f;
+	py = 4.0f;
+	fov = 60;
+
+	this->camera.SetPerspective(60, this->camera.aspect, px, py);
 
 	Matrix44 anna_m = Matrix44();
 	int scale = 6;
@@ -65,7 +71,7 @@ Application::Application(const char* caption, int width, int height)
 	anna_m.M[3][1] = -1;
 
 	cleo_m.M[3][2] = 0;
-	cleo_m.M[3][1] = -1;
+	cleo_m.M[3][1] = -2.5;
 
 	lee_m.M[3][0] = 2;
 	lee_m.M[3][1] = -1.5;
@@ -95,18 +101,15 @@ void Application::Init(void)
 void Application::Render(void)
 {
 	framebuffer.Fill(Color::BLACK);
-	entities[0].Render(&framebuffer, &camera, Color(255, 0, 0));
-	entities[1].Render(&framebuffer, &camera, Color(255, 255, 255));
-	entities[2].Render(&framebuffer, &camera, Color(0, 0, 255));
 
-	
-	framebuffer.Fill(Color::BLACK);
-	this->camera.LookAt(eye, center, up);
-
-	entities[0].Render(&framebuffer, &camera, Color(255, 0, 0));
-	entities[1].Render(&framebuffer, &camera, Color(255, 255, 255));
-	entities[2].Render(&framebuffer, &camera, Color(0, 0, 255));
-	
+	if (mode == 1) {
+		entities[0].Render(&framebuffer, &camera, Color(255, 0, 0));
+	}
+	else {
+		entities[0].Render(&framebuffer, &camera, Color(255, 0, 0));
+		entities[1].Render(&framebuffer, &camera, Color(255, 255, 255));
+		entities[2].Render(&framebuffer, &camera, Color(0, 0, 255));
+	}
 
 	framebuffer.Render();
 }
@@ -118,17 +121,26 @@ void Application::Update(float seconds_elapsed)
 	// this->camera.SetAspectRatio(float(window_width) / float(window_height));
 	// this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
 
-	Matrix44 m;
+	/*Matrix44 m;
 	m.MakeRotationMatrix(seconds_elapsed, Vector3(0, 1, 0));
 	entities[0].Update(seconds_elapsed, m);
 
-	m.MakeScaleMatrix(1.001, 1.001, 1.001);
+	if (int(time) % 3 == 0 && int(time) != last_scale_trigger) { // Every three seconds (and also check if not same instant where int(time) % 3 == 0
+		scale_growing = !scale_growing; // Change scale mode (grow or decreasse)
+		last_scale_trigger = int(time); // Update last trigger
+	}
+
+	if (scale_growing) {
+		m.MakeScaleMatrix(1.001f, 1.001f, 1.001f);
+	}
+	else {
+		m.MakeScaleMatrix(0.999f, 0.999f, 0.999f);
+	}
 	entities[1].Update(seconds_elapsed, m);
 
-	m.MakeTranslationMatrix(0, 0.005 * sin(3*time), 0);
-	entities[2].Update(seconds_elapsed, m);
 
-	//Update the particles
+	m.MakeTranslationMatrix(0, 0.005 * sin(3 * time), 0);
+	entities[2].Update(seconds_elapsed, m);*/
 }
 
 
@@ -137,14 +149,62 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 {
 	// KEY CODES: https://wiki.libsdl.org/SDL2/SDL_Keycode
 	switch (event.keysym.sym) {
-		case SDLK_ESCAPE: exit(0); break;
-		case SDLK_PLUS: eye.z++; break;
-		case SDLK_MINUS: eye.z--; break;
-		case SDLK_1: mode = 1; framebuffer.Fill(Color::BLACK); break;
-		case SDLK_2: mode = 2; framebuffer.Fill(Color::BLACK); break;
-		case SDLK_n:
-		case SDLK_f:
-		case SDLK_v: break;
+	case SDLK_ESCAPE: exit(0); break;
+	case SDLK_PLUS: {
+		if (curr_property == 1) {
+			px += 0.1;
+			std::cout << "Near field: " << px << "\n";
+		}
+		else if (curr_property == 2) {
+			py += 0.1;
+			std::cout << "Far field: " << py << "\n";
+		}
+		else { 
+			if (fov < 170) fov += 5; //Avoid faces turning upside down
+		} 
+
+		// if (px >= py) px = py - 0.1; //near can't be greater than far
+
+		this->camera.SetPerspective(fov, this->camera.aspect, px, py);
+		break;
+	}
+	case SDLK_MINUS: {
+		if (curr_property == 1) {
+			px -= 0.1;
+			// if (px < 0.01) px = 0.01;
+			std::cout << "Near field: " << px << "\n";
+		}
+		else if (curr_property == 2) {
+			py -= 0.1;
+			// if (py <= px) py = px + 1;
+			std::cout << "Far field: "<< py <<"\n";	
+
+		}
+		else {
+			if (fov > 5) fov -= 5;	//Avoid faces turning upside down
+		}
+
+		this->camera.SetPerspective(fov, this->camera.aspect, px, py);
+		break;
+	}
+	case SDLK_1: mode = 1; framebuffer.Fill(Color::BLACK); break;
+	case SDLK_2: mode = 2; framebuffer.Fill(Color::BLACK); break;
+	case SDLK_n: {
+		std::cout << "Current Property = Camera Near\n";
+		curr_property = 1;
+		break;
+	}
+	case SDLK_f: {
+		std::cout << "Current Property = Camera Far\n";
+		curr_property = 2;
+		break;
+	}
+	case SDLK_v: {
+		std::cout << "Current Property = Camera FOV\n";
+		curr_property = 3;
+		break;
+	}
+
 	}
 }
 
@@ -158,6 +218,13 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)
 
 		camera.LookAt(eye, center, up);
 	}
+	if (event.button == SDL_BUTTON_RIGHT) {
+		center.x++;
+		center.y++;
+		center.z++;
+		camera.LookAt(eye, center, up);
+	}
+
 }
 void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
 {

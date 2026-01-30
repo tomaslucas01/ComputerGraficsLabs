@@ -57,8 +57,5 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 }
 
 void Entity::Update(float seconds_elapsed, Matrix44 transform_matrix) {
-	// Matrix44 R = Matrix44();
-	// R.MakeRotationMatrix(seconds_elapsed, Vector3(0, 1, 0));
-
 	this->matrix = this->matrix * transform_matrix;
 }

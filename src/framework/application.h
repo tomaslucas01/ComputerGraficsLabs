@@ -34,6 +34,11 @@ public:
 	Vector3 up;
 	float angle;
 	float radius;
+	int scale_growing = 1;
+	int last_scale_trigger = 0;
+	int curr_property = 1;
+	float px, py = 0;
+	int fov = 0;
 
 	// ------------------
 
