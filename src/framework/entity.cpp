@@ -12,7 +12,7 @@ Entity::Entity(const char * object, Matrix44 m) {
 	this->matrix = m;
 }
 
-void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
+void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer) {
 	std::vector<Vector3> v = mesh->GetVertices();
 	if (v.empty()) return; //extreme case: no vertices
 	int width = framebuffer->width; //framebuffer width
@@ -34,13 +34,16 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 		}
 
 		// Make sure to render only the projected triangles that lay inside the cube [-1,1]^3.
-		if (Pos[0].x < -1 || Pos[1].x < -1 || Pos[2].x < -1 || Pos[0].x > 1 || Pos[1].x > 1 || Pos[2].x > 1) continue;
-		if (Pos[0].y < -1 || Pos[1].y < -1 || Pos[2].y < -1 || Pos[0].y > 1 || Pos[1].y > 1 || Pos[2].y > 1) continue;
-		if (Pos[0].z < -1 || Pos[1].z < -1 || Pos[2].z < -1 || Pos[0].z > 1 || Pos[1].z > 1 || Pos[2].z > 1) continue;
+		if (Pos[0].x < -1 || Pos[1].x < -1 || Pos[2].x < -1 || Pos[0].x > 1 || Pos[1].x > 1 || Pos[2].x > 1) {
+			if (Pos[0].y < -1 || Pos[1].y < -1 || Pos[2].y < -1 || Pos[0].y > 1 || Pos[1].y > 1 || Pos[2].y > 1) {
+				if (Pos[0].z < -1 || Pos[1].z < -1 || Pos[2].z < -1 || Pos[0].z > 1 || Pos[1].z > 1 || Pos[2].z > 1) continue;
+			}
+		}
 
 		//Before drawing each of the triangle lines, convert the clip space positions to screen space using the framebuffer width and height.
 		int space_x[3];
 		int space_y[3];
+		float space_z[3];
 		for (int k = 0; k < 3; k++) {
 			//Use your framebuffer (screen) width and height to convert the clip-space [-1, 1]
 			float a = (Pos[k].x + 1) / 2;
@@ -48,9 +51,22 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c) {
 			float b = (Pos[k].y + 1) / 2;
 			space_y[k] = (int)(b * (float)height);
 		}
-		framebuffer->DrawLineDDA(space_x[0], space_y[0], space_x[1], space_y[1], c);
+
+		// framebuffer->DrawTriangle(Vector2(space_x[0], space_y[0]), Vector2(space_x[1], space_y[1]), Vector2(space_x[2], space_y[2]), c, true, c);
+
+		framebuffer->DrawTriangleInterpolated(
+			Vector3(space_x[0], space_y[0], Pos[0].z),
+			Vector3(space_x[1], space_y[1], Pos[1].z),
+			Vector3(space_x[2], space_y[2], Pos[2].z),
+			Color::RED,
+			Color::GREEN,
+			Color::BLUE,
+			zBuffer
+		);
+
+		/*framebuffer->DrawLineDDA(space_x[0], space_y[0], space_x[1], space_y[1], c);
 		framebuffer->DrawLineDDA(space_x[1], space_y[1], space_x[2], space_y[2], c);
-		framebuffer->DrawLineDDA(space_x[2], space_y[2], space_x[0], space_y[0], c);
+		framebuffer->DrawLineDDA(space_x[2], space_y[2], space_x[0], space_y[0], c);*/
 
 	}
 

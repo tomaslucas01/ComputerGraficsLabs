@@ -437,6 +437,47 @@ void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2
 	}
 }
 
+void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2, FloatImage* zBuffer) {
+	std::vector<Cell> table;
+	table.resize(height);
+
+	ScanLineDDA(p0.x, p0.y, p1.x, p1.y, table); // Update table's cells values with line p0-p1
+	ScanLineDDA(p1.x, p1.y, p2.x, p2.y, table); // For line p1-p2
+	ScanLineDDA(p2.x, p2.y, p0.x, p0.y, table); // For line p2-p0
+
+	Vector3 ab = p1 - p0;
+	Vector3 ac = p2 - p0;
+
+	float area = (ab.Cross(ac)).Length() / 2.0;
+
+	for (int i = 0; i < height; ++i) {
+		for (int j = table[i].minx; j < table[i].maxx; ++j) {
+			Vector3 p(i, j, 0); // Need to calculate zeta depth
+			Vector3 p0p = p0 - p;
+			Vector3 p1p = p1 - p;
+			Vector3 p2p = p2 - p;
+
+			float alpha = ((p1p.Cross(p2p)).Length() / 2.0) / area;
+			float beta = ((p0p.Cross(p2p)).Length() / 2.0) / area;
+			float gamma = 1 - alpha - beta;
+
+			float sum = alpha + beta + gamma;
+			alpha /= sum;
+			beta /= sum;
+			gamma /= sum;
+
+			Color final_color = alpha * c0 + beta * c1 + gamma * c2;
+			float final_z = alpha * p0.z + beta * p1.z + gamma * p2.z;
+
+			zBuffer->SetPixel(j, i, final_z);
+
+			SetPixel(j, i, final_color);
+		}
+	}
+}
+
+
+
 // Used for both drawing button images and loaded bit map images
 void Image::DrawImage(const Image& image, int x, int y) {
 	for (int i = x; i < x + image.width; ++i) {
