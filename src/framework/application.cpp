@@ -19,6 +19,9 @@ Application::Application(const char* caption, int width, int height)
 
 	// Our inits
 	mode = 1;
+	mouse_left_pressed = false;
+	mouse_right_pressed = false;
+
 	this->camera = Camera();
 	eye = Vector3(0, 0, 5);
 	center = Vector3(0, 0, 0);
@@ -65,11 +68,12 @@ Application::Application(const char* caption, int width, int height)
 	anna_m.M[3][0] = -2;
 	anna_m.M[3][1] = -1;
 
-	cleo_m.M[3][2] = 0;
-	cleo_m.M[3][1] = -2.5;
+	cleo_m.M[3][1] = -1;
+	cleo_m.M[3][2] = -2;
 
 	lee_m.M[3][0] = 2;
-	lee_m.M[3][1] = -1.5;
+	lee_m.M[3][1] = -1;
+	lee_m.M[3][2] = -4;
 
 	Entity anna = Entity("../res/meshes/anna.obj", anna_m);
 	Entity cleo = Entity("../res/meshes/cleo.obj", cleo_m);
@@ -96,6 +100,7 @@ void Application::Init(void)
 void Application::Render(void)
 {
 	framebuffer.Fill(Color::BLACK);
+	zBuffer.Fill(1.0);
 
 	if (mode == 1) {
 		entities[0].Render(&framebuffer, &camera, &zBuffer);
@@ -106,6 +111,8 @@ void Application::Render(void)
 		entities[1].Render(&framebuffer, &camera, &zBuffer);
 		entities[2].Render(&framebuffer, &camera, &zBuffer);
 	}
+
+	framebuffer.DrawImage(zBuffer, 0, 0);
 
 	framebuffer.Render();
 }
@@ -214,27 +221,16 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 
 void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)
 {
-	if (event.button == SDL_BUTTON_LEFT) {
+	if (event.button == SDL_BUTTON_LEFT) mouse_left_pressed = true;
 
-		angle += 0.15;
-		eye.x = center.x + cos(angle) * radius;
-		eye.z = center.z + sin(angle) * radius;
-
-		camera.LookAt(eye, center, up);
-	}
-	if (event.button == SDL_BUTTON_RIGHT) {
-		center.x++;
-		center.y++;
-		center.z++;
-		camera.LookAt(eye, center, up);
-	}
-
+	if (event.button == SDL_BUTTON_RIGHT) mouse_right_pressed = true;
 }
 
 void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
 {
+	if (event.button == SDL_BUTTON_LEFT) mouse_left_pressed = false;
 
-
+	if (event.button == SDL_BUTTON_RIGHT) mouse_right_pressed = false;
 }
 
 void Application::OnMouseMove(SDL_MouseButtonEvent event)

@@ -439,39 +439,46 @@ void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2
 
 void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2, FloatImage* zBuffer) {
 	std::vector<Cell> table;
-	table.resize(height);
+	table.resize(height);	
 
 	ScanLineDDA(p0.x, p0.y, p1.x, p1.y, table); // Update table's cells values with line p0-p1
 	ScanLineDDA(p1.x, p1.y, p2.x, p2.y, table); // For line p1-p2
 	ScanLineDDA(p2.x, p2.y, p0.x, p0.y, table); // For line p2-p0
 
-	Vector3 ab = p1 - p0;
-	Vector3 ac = p2 - p0;
+	// float area = (ab.Cross(ac)).Length() * 0.5f;
+	float area = ((p1 - p0).Cross(p2 - p0)).z;
+	if (area == 0.0f) return;
 
-	float area = (ab.Cross(ac)).Length() / 2.0;
+	for (int y = 0; y < height; ++y) {
 
-	for (int i = 0; i < height; ++i) {
-		for (int j = table[i].minx; j < table[i].maxx; ++j) {
-			Vector3 p(i, j, 0); // Need to calculate zeta depth
-			Vector3 p0p = p0 - p;
-			Vector3 p1p = p1 - p;
-			Vector3 p2p = p2 - p;
+		int startx = std::max(0, table[y].minx); // Extremely important in order to not charsh when we zoom
+		int endx = std::min((int)width, table[y].maxx);
 
-			float alpha = ((p1p.Cross(p2p)).Length() / 2.0) / area;
-			float beta = ((p0p.Cross(p2p)).Length() / 2.0) / area;
-			float gamma = 1 - alpha - beta;
+		for (int x = startx; x < endx; ++x) {
+			Vector3 p(x + 0.5f, y + 0.5f, 0); // Need to calculate zeta depth
+			
 
-			float sum = alpha + beta + gamma;
+			float alpha = (p1 - p).Cross(p2 - p).z / area;
+			float beta = (p2 - p).Cross(p0 - p).z / area;
+			float gamma = 1.0f - alpha - beta;
+
+			/*float sum = alpha + beta + gamma;
 			alpha /= sum;
 			beta /= sum;
-			gamma /= sum;
+			gamma /= sum;*/
 
-			Color final_color = alpha * c0 + beta * c1 + gamma * c2;
+			if (alpha < 0 || beta < 0 || gamma < 0) continue;
+
+			
 			float final_z = alpha * p0.z + beta * p1.z + gamma * p2.z;
 
-			zBuffer->SetPixel(j, i, final_z);
+			if (final_z < zBuffer->GetPixel(x, y)) {
+				zBuffer->SetPixel(x, y, final_z);
 
-			SetPixel(j, i, final_color);
+				Color final_color = alpha * c0 + beta * c1 + gamma * c2;
+
+				SetPixel(x, y, final_color);
+			}
 		}
 	}
 }
@@ -479,10 +486,12 @@ void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const
 
 
 // Used for both drawing button images and loaded bit map images
-void Image::DrawImage(const Image& image, int x, int y) {
+void Image::DrawImage(const FloatImage& image, int x, int y) {
 	for (int i = x; i < x + image.width; ++i) {
 		for (int j = y; j < y + image.height; ++j) {
-			SetPixel(i, j, image.GetPixel(i - x, j - y)); // Print in curr image the pixel at (i-x, j-y) of given image
+			float z = image.GetPixel(i - x, j - y);
+			SetPixel(i, j, Color(255 * z, 255 * z, 255 * z));
+			// SetPixel(i, j, image.GetPixel(i - x, j - y)); // Print in curr image the pixel at (i-x, j-y) of given image
 		}
 	}
 }

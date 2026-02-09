@@ -93,7 +93,7 @@ public:
 
 
 
-	void Image::DrawImage(const Image& image, int x, int y);
+	void Image::DrawImage(const FloatImage& image, int x, int y);
 
 
 	// Used to easy code

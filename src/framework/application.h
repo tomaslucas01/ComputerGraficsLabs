@@ -39,6 +39,8 @@ public:
 	int curr_property = 1;
 	float px, py = 0;
 	int fov = 0;
+	bool mouse_left_pressed;
+	bool mouse_right_pressed;
 
 	// ------------------
 

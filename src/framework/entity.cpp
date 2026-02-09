@@ -50,14 +50,16 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer) {
 			space_x[k] = (int)(a * (float)width);
 			float b = (Pos[k].y + 1) / 2;
 			space_y[k] = (int)(b * (float)height);
+
+			space_z[k] = (Pos[k].z + 1.0f) *0.5f; // Convert z to [0, 1] range
 		}
 
 		// framebuffer->DrawTriangle(Vector2(space_x[0], space_y[0]), Vector2(space_x[1], space_y[1]), Vector2(space_x[2], space_y[2]), c, true, c);
 
 		framebuffer->DrawTriangleInterpolated(
-			Vector3(space_x[0], space_y[0], Pos[0].z),
-			Vector3(space_x[1], space_y[1], Pos[1].z),
-			Vector3(space_x[2], space_y[2], Pos[2].z),
+			Vector3(space_x[0], space_y[0], space_z[0]),
+			Vector3(space_x[1], space_y[1], space_z[1]),
+			Vector3(space_x[2], space_y[2], space_z[2]),
 			Color::RED,
 			Color::GREEN,
 			Color::BLUE,
