@@ -32,7 +32,10 @@ public:
 	Vector3 eye;
 	Vector3 center;
 	Vector3 up;
+
 	float angle;
+	float pitch;
+
 	float radius;
 	int scale_growing = 1;
 	int last_scale_trigger = 0;
@@ -41,6 +44,10 @@ public:
 	int fov = 0;
 	bool mouse_left_pressed;
 	bool mouse_right_pressed;
+
+	bool use_occlusion = true;
+	bool use_texture = true;
+	bool use_interpolation = true;
 
 	// ------------------
 
@@ -75,6 +82,7 @@ public:
 		this->window_width = width;
 		this->window_height = height;
 		this->framebuffer.Resize(width, height);
+		this->zBuffer.Resize(width, height);
 	}
 
 	Vector2 GetWindowSize()

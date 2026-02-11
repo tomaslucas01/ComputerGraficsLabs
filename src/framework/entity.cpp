@@ -4,24 +4,30 @@ Entity::Entity() {
 	this->mesh = new Mesh();
 	this->matrix = Matrix44();
 	this->matrix.SetIdentity();
+	this->texture = new Image();
 }
 
-Entity::Entity(const char * object, Matrix44 m) {
+Entity::Entity(const char * object, Matrix44 m, const char* texture, bool flipY) {
 	this->mesh = new Mesh();
 	this->mesh->LoadOBJ(object);
 	this->matrix = m;
+	this->texture = new Image();
+	this->texture->LoadTGA(texture, flipY);
 }
 
-void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer) {
+void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer, bool use_texture, bool use_occlusion, bool use_interpolation) {
 	std::vector<Vector3> v = mesh->GetVertices();
-	if (v.empty()) return; //extreme case: no vertices
-	int width = framebuffer->width; //framebuffer width
-	int height = framebuffer->height; //framebuffer height
+	std::vector<Vector2> mesh_uvs = mesh->GetUVs();
 
+	if (v.empty()) return; //extreme case: no vertices
+
+
+	Image::sTriangleInfo triangle;
 
 	for (int i = 0; i + 2 < v.size(); i = i + 3) { //we go by 3 because we render triangles
 		// a) Transform the vertices from local to world space using the Entity’s model matrix
 		Vector3 Pos[3];
+		Vector2 UV[3];
 		for (int k = 0; k < 3; k++) {
 			Vector3 v3 = v[i + k];
 
@@ -31,6 +37,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer) {
 
 			//projects a vector using the camera’s viewprojection matrix.
 			Pos[k] = camera->ProjectVector(world.GetVector3());
+			UV[k] = mesh_uvs[i + k];
 		}
 
 		// Make sure to render only the projected triangles that lay inside the cube [-1,1]^3.
@@ -47,31 +54,36 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer) {
 		for (int k = 0; k < 3; k++) {
 			//Use your framebuffer (screen) width and height to convert the clip-space [-1, 1]
 			float a = (Pos[k].x + 1) / 2;
-			space_x[k] = (int)(a * (float)width);
+			space_x[k] = (int)(a * (float)framebuffer->width);
+
 			float b = (Pos[k].y + 1) / 2;
-			space_y[k] = (int)(b * (float)height);
+			space_y[k] = (int)(b * (float)framebuffer->height);
 
 			space_z[k] = (Pos[k].z + 1.0f) *0.5f; // Convert z to [0, 1] range
 		}
 
 		// framebuffer->DrawTriangle(Vector2(space_x[0], space_y[0]), Vector2(space_x[1], space_y[1]), Vector2(space_x[2], space_y[2]), c, true, c);
 
+		triangle.p0 = Vector3(space_x[0], space_y[0], space_z[0]);
+		triangle.p1 = Vector3(space_x[1], space_y[1], space_z[1]);
+		triangle.p2 = Vector3(space_x[2], space_y[2], space_z[2]);
+
+		triangle.uv0 = UV[0];
+		triangle.uv1 = UV[1];
+		triangle.uv2 = UV[2];
+
+		triangle.c0 = Color::RED;
+		triangle.c1 = Color::GREEN;
+		triangle.c2 = Color::BLUE;
+
+		triangle.texture = texture;
+
 		framebuffer->DrawTriangleInterpolated(
-			Vector3(space_x[0], space_y[0], space_z[0]),
-			Vector3(space_x[1], space_y[1], space_z[1]),
-			Vector3(space_x[2], space_y[2], space_z[2]),
-			Color::RED,
-			Color::GREEN,
-			Color::BLUE,
-			zBuffer
+			triangle,
+			zBuffer,
+			use_texture, use_occlusion, use_interpolation
 		);
-
-		/*framebuffer->DrawLineDDA(space_x[0], space_y[0], space_x[1], space_y[1], c);
-		framebuffer->DrawLineDDA(space_x[1], space_y[1], space_x[2], space_y[2], c);
-		framebuffer->DrawLineDDA(space_x[2], space_y[2], space_x[0], space_y[0], c);*/
-
 	}
-
 }
 
 void Entity::Update(float seconds_elapsed, Matrix44 transform_matrix) {

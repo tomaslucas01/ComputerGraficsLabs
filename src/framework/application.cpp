@@ -33,6 +33,7 @@ Application::Application(const char* caption, int width, int height)
 	//WE USE THIS LINE OF CODE TO KNOW WHERE IS THE CENTER AND OUR ANGLE WITH THE CENTRE
 	Vector3 dir = (eye - center).Normalize();
 	angle = atan2(dir.z, dir.x);
+	pitch = asin(dir.y);
 	/*this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
 
 
@@ -52,9 +53,8 @@ Application::Application(const char* caption, int width, int height)
 	// Perspective
 	curr_property = 1; //Initialize with camera near
 	px = 0.1f;
-	py = 4.0f;
-	fov = 60;
-	std::cout << "Current Property = Camera Near\n";
+	py = 10.0f;
+	fov = 60.0f;
 	this->camera.SetPerspective(fov, this->camera.aspect, px, py);
 
 	Matrix44 anna_m = Matrix44();
@@ -75,9 +75,9 @@ Application::Application(const char* caption, int width, int height)
 	lee_m.M[3][1] = -1;
 	lee_m.M[3][2] = -4;
 
-	Entity anna = Entity("../res/meshes/anna.obj", anna_m);
-	Entity cleo = Entity("../res/meshes/cleo.obj", cleo_m);
-	Entity lee = Entity("../res/meshes/lee.obj", lee_m);
+	Entity anna = Entity("../res/meshes/anna.obj", anna_m, "../res/textures/anna_color_specular.tga", true);
+	Entity cleo = Entity("../res/meshes/cleo.obj", cleo_m, "../res/textures/cleo_color_specular.tga", true);
+	Entity lee = Entity("../res/meshes/lee.obj", lee_m, "../res/textures/lee_color_specular.tga", true);
 
 	entities.push_back(anna);
 	entities.push_back(cleo);
@@ -103,16 +103,16 @@ void Application::Render(void)
 	zBuffer.Fill(1.0);
 
 	if (mode == 1) {
-		entities[0].Render(&framebuffer, &camera, &zBuffer);
+		entities[0].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation);
 	}
 
 	else if (mode == 2) {
-		entities[0].Render(&framebuffer, &camera, &zBuffer);
-		entities[1].Render(&framebuffer, &camera, &zBuffer);
-		entities[2].Render(&framebuffer, &camera, &zBuffer);
+		entities[0].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation);
+		entities[1].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation);
+		entities[2].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation);
 	}
 
-	framebuffer.DrawImage(zBuffer, 0, 0);
+	// framebuffer.DrawImage(zBuffer, 0, 0);
 
 	framebuffer.Render();
 }
@@ -120,9 +120,31 @@ void Application::Render(void)
 
 void Application::Update(float seconds_elapsed)
 {
-
 	this->camera.SetAspectRatio(float(window_width) / float(window_height));
 	this->camera.SetPerspective(fov, this->camera.aspect, px, py);
+
+	// movement
+	float speed = 5 * seconds_elapsed;
+
+	// Get camera-local axes in world space
+	Vector3 right = camera.GetLocalVector(Vector3(1, 0, 0));    // right
+	Vector3 upp = camera.GetLocalVector(Vector3(0, 1, 0));		// up
+	Vector3 forward = camera.GetLocalVector(Vector3(0, 0, -1)); // forward
+
+
+	//We put this in update so we don't have to spam click buttons
+	if (keystate[SDL_SCANCODE_W]) { eye = eye + forward * speed; center = center + forward * speed; };
+	if (keystate[SDL_SCANCODE_Q]) { eye = eye + upp * speed; center = center + upp * speed; } // up (camera moves down)
+	if (keystate[SDL_SCANCODE_A]) { eye = eye - right * speed; center = center - right * speed; } // left (camera moves right)
+	if (keystate[SDL_SCANCODE_S]) { eye = eye - forward * speed; center = center - forward * speed; };
+	if (keystate[SDL_SCANCODE_E]) { eye = eye - upp * speed; center = center - upp * speed; } // down (camera moves up)
+	if (keystate[SDL_SCANCODE_D]) { eye = eye + right * speed; center = center + right * speed; } // right (camera moves left)
+	if (mouse_right_pressed) {
+		//modify center
+	}
+
+
+	camera.LookAt(eye, center, up);
 
 	// this->camera.SetAspectRatio(float(window_width) / float(window_height));
 	// this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
@@ -162,13 +184,15 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 	case SDLK_PLUS: {
 		switch (curr_property) {
 		case 1: {
-			if (px < (py - 0.1)) {
-				px += 0.1;
+			if (px < (py - 0.5f)) {
+				px += 0.5;
 			}
+			std::cout << px << " ";
 			break;
 		}
 		case 2: {
-			py += 0.1;
+			py += 0.5;
+			std::cout << py << " ";
 			break;
 		}
 		case 3: {
@@ -179,23 +203,29 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 			break;
 		}
 		}
-
+		this->camera.SetAspectRatio(float(window_width) / float(window_height));
 		this->camera.SetPerspective(fov, this->camera.aspect, px, py);
+		this->camera.LookAt(eye, center, up);
+
 		break;
 	}
 	case SDLK_MINUS: {
 		if (curr_property == 1) {
-			px -= 0.1;
-			if (px < 0.01) px = 0.01;
+			px -= 0.5;
+			if (px < 0.05) px = 0.05;
+			std::cout << px << " ";
 		}
 		else if (curr_property == 2) {
-			py -= 0.1;
+			py -= 0.5;
 			if (py <= px) py = px + 1;
+			std::cout << py << " ";
 		}
 		else {
 			if (fov > 0) fov -= 5;	//Avoid faces turning upside down
 		}
+		this->camera.SetAspectRatio(float(window_width) / float(window_height));
 		this->camera.SetPerspective(fov, this->camera.aspect, px, py);
+		this->camera.LookAt(eye, center, up);
 		break;
 	}
 	case SDLK_1: mode = 1; framebuffer.Fill(Color::BLACK); break;
@@ -215,7 +245,18 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 		curr_property = 3;
 		break;
 	}
-
+	case SDLK_t: {
+		use_texture = !use_texture;
+		break;
+	}
+	case SDLK_z: {
+		use_occlusion = !use_occlusion;
+		break;
+	}
+	case SDLK_c: {
+		use_interpolation = !use_interpolation;
+		break;
+	}
 	}
 }
 
@@ -237,6 +278,45 @@ void Application::OnMouseMove(SDL_MouseButtonEvent event)
 {
 	if (mouse_state != 0) {
 
+		angle -= mouse_delta.x / (window_width * 0.1f);
+		pitch -= mouse_delta.y / (window_height * 0.1f);
+
+		if (angle > PI) angle -= 2 * PI;
+		else if (angle < -PI) angle += 2 * PI;
+
+		if (pitch > PI) pitch -= 2 * PI;
+		else if (pitch < -PI) pitch += 2 * PI;
+
+
+		if (mouse_left_pressed) {
+
+			eye.x = center.x + cos(angle) * radius * cos(pitch);
+			eye.y = center.y + radius * sin(pitch);
+			eye.z = center.z + sin(angle) * radius * cos(pitch);
+
+			// Up vector is tangent to orbit "sphere", so it is the derivative of pitch
+			up = Vector3(
+				-sin(pitch) * cos(angle),
+				cos(pitch),
+				-sin(pitch) * sin(angle)
+			);
+		}
+		else if (mouse_right_pressed) {
+
+			float invAngle = angle + PI;
+			float invPitch = -pitch;
+
+			center.x = eye.x + cos(invAngle) * radius * cos(invPitch);
+			center.y = eye.y + radius * sin(invPitch);
+			center.z = eye.z + sin(invAngle) * radius * cos(invPitch);
+
+			up = Vector3(
+				-sin(invPitch) * cos(invAngle),
+				cos(invPitch),
+				-sin(invPitch) * sin(invAngle)
+			);
+		}
+		camera.LookAt(eye, center, up);
 	}
 }
 

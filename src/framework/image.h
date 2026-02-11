@@ -20,6 +20,7 @@ class FloatImage;
 class Entity;
 class Camera;
 
+
 // A matrix of pixels
 class Image
 {
@@ -42,6 +43,23 @@ public:
 		int minx = INT_MAX;
 		int maxx = INT_MIN;
 	};
+
+	// Class to store triangle data
+	typedef struct sTriangleInfo {
+		Vector3 p0;
+		Vector3 p1;
+		Vector3 p2;
+
+		Vector2 uv0;
+		Vector2 uv1;
+		Vector2 uv2;
+
+		Color c0;
+		Color c1;
+		Color c2;
+
+		Image* texture;
+	} sTriangleInfo;
 
 	// Constructors
 	Image();
@@ -89,7 +107,12 @@ public:
 	void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c);
 	void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<Cell>& table);
 	void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor);
-	void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2, FloatImage* zBuffer);
+	// void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2, FloatImage* zBuffer);
+
+	void Image::DrawTriangleInterpolated(
+		const sTriangleInfo &t, FloatImage* zBuffer,
+		bool use_texture, bool use_occlusion, bool use_interpolation
+	);
 
 
 

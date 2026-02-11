@@ -392,13 +392,13 @@ void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<Cell>& table
 
 	Vector2 v(float(dx) / d, float(dy) / d);
 
-	float x = x0;
-	float y = y0;
+	float x = x0 + 0.5f;
+	float y = y0 + 0.5f;
 
 	for (int i = 0; i < d; ++i) {
-		int ix = int(x + 0.5f); // Adding 0.5 makes so that negative numbers are rounded correctly
-		int iy = int(y + 0.5f);
-		if (iy >= 0 && iy < height) {
+		int ix = int(std::floor(x));
+		int iy = int(std::floor(y));
+		if (iy >= 0 && iy < table.size()) {
 			table[iy].minx = std::min(table[iy].minx, ix);	// If x value is less than cell's min, update
 			table[iy].maxx = std::max(table[iy].maxx, ix);	// Same for max
 		}
@@ -406,7 +406,6 @@ void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<Cell>& table
 		x += v.x;
 		y += v.y;
 	}
-	
 }
 
 
@@ -437,7 +436,8 @@ void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2
 	}
 }
 
-void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2, FloatImage* zBuffer) {
+// void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2, FloatImage* zBuffer) {
+/*void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2, const Color& c0, const Color& c1, const Color& c2, FloatImage* zBuffer, Image* texture, const Vector2& uv0, const Vector2& uv1, const Vector2& uv2) {
 	std::vector<Cell> table;
 	table.resize(height);	
 
@@ -445,14 +445,14 @@ void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const
 	ScanLineDDA(p1.x, p1.y, p2.x, p2.y, table); // For line p1-p2
 	ScanLineDDA(p2.x, p2.y, p0.x, p0.y, table); // For line p2-p0
 
-	// float area = (ab.Cross(ac)).Length() * 0.5f;
-	float area = ((p1 - p0).Cross(p2 - p0)).z;
-	if (area == 0.0f) return;
+	float area = (p1 - p0).Cross(p2 - p0).z;
+	if (fabs(area) == 1e-4f) return;
 
 	for (int y = 0; y < height; ++y) {
 
 		int startx = std::max(0, table[y].minx); // Extremely important in order to not charsh when we zoom
 		int endx = std::min((int)width, table[y].maxx);
+
 
 		for (int x = startx; x < endx; ++x) {
 			Vector3 p(x + 0.5f, y + 0.5f, 0); // Need to calculate zeta depth
@@ -462,23 +462,113 @@ void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const
 			float beta = (p2 - p).Cross(p0 - p).z / area;
 			float gamma = 1.0f - alpha - beta;
 
-			/*float sum = alpha + beta + gamma;
+			float sum = alpha + beta + gamma;
 			alpha /= sum;
 			beta /= sum;
-			gamma /= sum;*/
+			gamma /= sum;
 
 			if (alpha < 0 || beta < 0 || gamma < 0) continue;
 
-			
+			Vector2 text_coordinate = 
+				Vector2(alpha * uv0.x, alpha * uv0.y) +
+				Vector2(beta * uv1.x, beta * uv1.y) +
+				Vector2(gamma * uv2.x, gamma * uv2.y);
+
+			text_coordinate.x *= (texture->width - 1);
+			text_coordinate.y *= (texture->height - 1);
+
 			float final_z = alpha * p0.z + beta * p1.z + gamma * p2.z;
 
 			if (final_z < zBuffer->GetPixel(x, y)) {
 				zBuffer->SetPixel(x, y, final_z);
 
-				Color final_color = alpha * c0 + beta * c1 + gamma * c2;
+				// Color final_color = alpha * c0 + beta * c1 + gamma * c2;
+				Color final_color = texture->GetPixel(text_coordinate.x, text_coordinate.y);
 
 				SetPixel(x, y, final_color);
 			}
+		}
+	}
+}*/
+
+void Image::DrawTriangleInterpolated(
+	const sTriangleInfo& t, FloatImage* zBuffer,
+	bool use_texture, bool use_occlusion, bool use_interpolation
+) {
+	std::vector<Cell> table;
+	table.resize(height);
+
+	ScanLineDDA(t.p0.x, t.p0.y, t.p1.x, t.p1.y, table); // Update table's cells values with line p0-p1
+	ScanLineDDA(t.p1.x, t.p1.y, t.p2.x, t.p2.y, table); // For line p1-p2
+	ScanLineDDA(t.p2.x, t.p2.y, t.p0.x, t.p0.y, table); // For line p2-p0
+
+	float area = (t.p1 - t.p0).Cross(t.p2 - t.p0).z;
+	if (area == 0) return;
+
+	for (int y = 0; y < height; ++y) {
+
+		int startx = std::max(0, table[y].minx-1); // Extremely important in order to not charsh when we zoom
+		int endx = std::min((int)width, table[y].maxx+1);
+
+
+		for (int x = startx; x < endx; ++x) {
+			Vector3 p(x + 0.5f, y + 0.5f, 0); // Need to calculate zeta depth
+
+
+			float alpha = (t.p1 - p).Cross(t.p2 - p).z / area;
+			float beta = (t.p2 - p).Cross(t.p0 - p).z / area;
+			float gamma = 1.0f - alpha - beta;
+
+			float sum = alpha + beta + gamma;
+			alpha /= sum;
+			beta /= sum;
+			gamma /= sum;
+
+			if (alpha < 0 || beta < 0 || gamma < 0) continue;
+
+			Vector2 text_coordinate;
+
+			float final_z = alpha * t.p0.z + beta * t.p1.z + gamma * t.p2.z;
+			Color final_color;
+
+			
+
+			if (use_interpolation) { // INTERPOLATED
+
+				if (use_texture) { // INTERPOLATED TEXTURE
+					text_coordinate =
+						Vector2(alpha * t.uv0.x, alpha * t.uv0.y) +
+						Vector2(beta * t.uv1.x, beta * t.uv1.y) +
+						Vector2(gamma * t.uv2.x, gamma * t.uv2.y);
+
+					text_coordinate.x *= (t.texture->width - 1);
+					text_coordinate.y *= (t.texture->height - 1);
+
+					final_color = t.texture->GetPixel(text_coordinate.x, text_coordinate.y);
+				}
+				else { // INTERPOLATED COLORS
+					final_color = alpha * t.c0 + beta * t.c1 + gamma * t.c2;
+				}
+			}
+			else { // NO-INTER
+
+				if (use_texture) { // NO-INTER TEXTURE
+					final_color = t.texture->GetPixel(t.uv0.x * (t.texture->width - 1), t.uv0.y * (t.texture->height - 1));
+				}
+				else { // NO-INTER COLOR
+					final_color = t.c0 ;
+				}
+			}
+
+			if (use_occlusion) {
+				if (final_z < zBuffer->GetPixel(x, y)) {
+					zBuffer->SetPixel(x, y, final_z);
+					SetPixel(x, y, final_color);
+				}
+			} else{
+				SetPixel(x, y, final_color);
+			}
+			
 		}
 	}
 }
