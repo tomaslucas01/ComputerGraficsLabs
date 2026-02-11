@@ -15,7 +15,9 @@ Entity::Entity(const char * object, Matrix44 m, const char* texture, bool flipY)
 	this->texture->LoadTGA(texture, flipY);
 }
 
-void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer, bool use_texture, bool use_occlusion, bool use_interpolation) {
+void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer,
+	bool use_texture, bool use_occlusion, bool use_interpolation, bool use_wireframe
+) {
 	std::vector<Vector3> v = mesh->GetVertices();
 	std::vector<Vector2> mesh_uvs = mesh->GetUVs();
 
@@ -41,11 +43,18 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer, boo
 		}
 
 		// Make sure to render only the projected triangles that lay inside the cube [-1,1]^3.
-		if (Pos[0].x < -1 || Pos[1].x < -1 || Pos[2].x < -1 || Pos[0].x > 1 || Pos[1].x > 1 || Pos[2].x > 1) {
-			if (Pos[0].y < -1 || Pos[1].y < -1 || Pos[2].y < -1 || Pos[0].y > 1 || Pos[1].y > 1 || Pos[2].y > 1) {
-				if (Pos[0].z < -1 || Pos[1].z < -1 || Pos[2].z < -1 || Pos[0].z > 1 || Pos[1].z > 1 || Pos[2].z > 1) continue;
-			}
-		}
+
+		// X planes
+		if (Pos[0].x < -1 && Pos[1].x < -1 && Pos[2].x < -1) continue;
+		if (Pos[0].x > 1 && Pos[1].x > 1 && Pos[2].x > 1) continue;
+
+		// Y planes
+		if (Pos[0].y < -1 && Pos[1].y < -1 && Pos[2].y < -1) continue;
+		if (Pos[0].y > 1 && Pos[1].y > 1 && Pos[2].y > 1) continue;
+
+		// Z planes (THIS is your near/far plane)
+		if (Pos[0].z < -1 || Pos[1].z < -1 || Pos[2].z < -1) continue; // Near
+		if (Pos[0].z > 1 || Pos[1].z > 1 || Pos[2].z > 1) continue; // Far
 
 		//Before drawing each of the triangle lines, convert the clip space positions to screen space using the framebuffer width and height.
 		int space_x[3];
@@ -62,27 +71,36 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer, boo
 			space_z[k] = (Pos[k].z + 1.0f) *0.5f; // Convert z to [0, 1] range
 		}
 
+		if (use_wireframe) {
+			framebuffer->DrawLineDDA(space_x[0], space_y[0], space_x[1], space_y[1], Color::GRAY);
+			framebuffer->DrawLineDDA(space_x[1], space_y[1], space_x[2], space_y[2], Color::GRAY);
+			framebuffer->DrawLineDDA(space_x[0], space_y[0], space_x[2], space_y[2], Color::GRAY);
+		}
+		else {
+			triangle.p0 = Vector3(space_x[0], space_y[0], space_z[0]);
+			triangle.p1 = Vector3(space_x[1], space_y[1], space_z[1]);
+			triangle.p2 = Vector3(space_x[2], space_y[2], space_z[2]);
+
+			triangle.uv0 = UV[0];
+			triangle.uv1 = UV[1];
+			triangle.uv2 = UV[2];
+
+			triangle.c0 = Color::RED;
+			triangle.c1 = Color::GREEN;
+			triangle.c2 = Color::BLUE;
+
+			triangle.texture = texture;
+
+			framebuffer->DrawTriangleInterpolated(
+				triangle,
+				zBuffer,
+				use_texture, use_occlusion, use_interpolation
+			);
+		}
+
 		// framebuffer->DrawTriangle(Vector2(space_x[0], space_y[0]), Vector2(space_x[1], space_y[1]), Vector2(space_x[2], space_y[2]), c, true, c);
 
-		triangle.p0 = Vector3(space_x[0], space_y[0], space_z[0]);
-		triangle.p1 = Vector3(space_x[1], space_y[1], space_z[1]);
-		triangle.p2 = Vector3(space_x[2], space_y[2], space_z[2]);
-
-		triangle.uv0 = UV[0];
-		triangle.uv1 = UV[1];
-		triangle.uv2 = UV[2];
-
-		triangle.c0 = Color::RED;
-		triangle.c1 = Color::GREEN;
-		triangle.c2 = Color::BLUE;
-
-		triangle.texture = texture;
-
-		framebuffer->DrawTriangleInterpolated(
-			triangle,
-			zBuffer,
-			use_texture, use_occlusion, use_interpolation
-		);
+		
 	}
 }
 

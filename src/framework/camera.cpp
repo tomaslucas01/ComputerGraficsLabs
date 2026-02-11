@@ -132,12 +132,14 @@ void Camera::UpdateProjectionMatrix()
 
 	if (type == PERSPECTIVE) {
 		float f = (1.0f / tan((fov * DEG2RAD) / 2.0f));
-		float range = near_plane - far_plane;
+		float range = far_plane - near_plane;
 		projection_matrix.M[0][0] = f / aspect;
 		projection_matrix.M[1][1] = f;
-		projection_matrix.M[2][2] = (far_plane + near_plane) / range;
+
+		projection_matrix.M[2][2] = -(far_plane + near_plane) / range;
 		projection_matrix.M[2][3] = -1.0f;
-		projection_matrix.M[3][2] = 2.0f * (far_plane * near_plane) / range;
+
+		projection_matrix.M[3][2] = -(2.0f * far_plane * near_plane) / range;
 		projection_matrix.M[3][3] = 0.0f;
 		// ...
 

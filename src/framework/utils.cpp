@@ -191,6 +191,8 @@ void launchLoop(Application* app)
 							case SDL_WINDOWEVENT_RESIZED: // Resize OpenGL context
 								std::cout << "window resize" << std::endl;
 								app->SetWindowSize( sdlEvent.window.data1, sdlEvent.window.data2 );
+								app->camera.SetAspectRatio(float(sdlEvent.window.data1) / float(sdlEvent.window.data2));
+								app->camera.SetPerspective(app->fov, app->camera.aspect, app->p_near, app->p_far);
 								break;
 						}
 						break;

@@ -40,7 +40,7 @@ public:
 	int scale_growing = 1;
 	int last_scale_trigger = 0;
 	int curr_property = 1;
-	float px, py = 0;
+	float p_near, p_far = 0;
 	int fov = 0;
 	bool mouse_left_pressed;
 	bool mouse_right_pressed;
@@ -48,6 +48,7 @@ public:
 	bool use_occlusion = true;
 	bool use_texture = true;
 	bool use_interpolation = true;
+	bool use_wireframe = false;
 
 	// ------------------
 

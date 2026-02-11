@@ -23,19 +23,22 @@ Application::Application(const char* caption, int width, int height)
 	mouse_right_pressed = false;
 
 	this->camera = Camera();
+
 	eye = Vector3(0, 0, 5);
 	center = Vector3(0, 0, 0);
 	up = Vector3(0, 1, 0);
+
 	radius = (eye - center).Length();
-	this->camera.LookAt(eye, center, up);
+
 	this->camera.SetAspectRatio(float(width) / float(height));
 
 	//WE USE THIS LINE OF CODE TO KNOW WHERE IS THE CENTER AND OUR ANGLE WITH THE CENTRE
 	Vector3 dir = (eye - center).Normalize();
 	angle = atan2(dir.z, dir.x);
 	pitch = asin(dir.y);
-	/*this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
 
+
+	/*this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
 
 	Matrix44 anna_m = Matrix44();
 	int scale = 20;
@@ -52,10 +55,11 @@ Application::Application(const char* caption, int width, int height)
 
 	// Perspective
 	curr_property = 1; //Initialize with camera near
-	px = 0.1f;
-	py = 10.0f;
+	p_near = 2.0f;
+	p_far = 10.0f;
 	fov = 60.0f;
-	this->camera.SetPerspective(fov, this->camera.aspect, px, py);
+	this->camera.LookAt(eye, center, up);
+	this->camera.SetPerspective(fov, this->camera.aspect, p_near, p_far);
 
 	Matrix44 anna_m = Matrix44();
 	int scale = 6;
@@ -92,26 +96,27 @@ void Application::Init(void)
 {
 	std::cout << "Initiating app..." << std::endl;
 
-	framebuffer.Fill(Color::BLACK);
+	framebuffer.Fill(Color::WHITE);
 }
 
 
 // Render one frame
 void Application::Render(void)
 {
-	framebuffer.Fill(Color::BLACK);
+	framebuffer.Fill(Color::WHITE);
 	zBuffer.Fill(1.0);
 
 	if (mode == 1) {
-		entities[0].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation);
+		entities[0].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation, use_wireframe);
 	}
 
 	else if (mode == 2) {
-		entities[0].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation);
-		entities[1].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation);
-		entities[2].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation);
+		entities[0].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation, use_wireframe);
+		entities[1].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation, use_wireframe);
+		entities[2].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation, use_wireframe);
 	}
 
+	// Uncomment to see z-buffer
 	// framebuffer.DrawImage(zBuffer, 0, 0);
 
 	framebuffer.Render();
@@ -120,9 +125,6 @@ void Application::Render(void)
 
 void Application::Update(float seconds_elapsed)
 {
-	this->camera.SetAspectRatio(float(window_width) / float(window_height));
-	this->camera.SetPerspective(fov, this->camera.aspect, px, py);
-
 	// movement
 	float speed = 5 * seconds_elapsed;
 
@@ -133,15 +135,15 @@ void Application::Update(float seconds_elapsed)
 
 
 	//We put this in update so we don't have to spam click buttons
-	if (keystate[SDL_SCANCODE_W]) { eye = eye + forward * speed; center = center + forward * speed; };
 	if (keystate[SDL_SCANCODE_Q]) { eye = eye + upp * speed; center = center + upp * speed; } // up (camera moves down)
-	if (keystate[SDL_SCANCODE_A]) { eye = eye - right * speed; center = center - right * speed; } // left (camera moves right)
-	if (keystate[SDL_SCANCODE_S]) { eye = eye - forward * speed; center = center - forward * speed; };
+	if (keystate[SDL_SCANCODE_A]) { eye = eye - right * speed; center = center - right * speed; } // left (camera moves left)
 	if (keystate[SDL_SCANCODE_E]) { eye = eye - upp * speed; center = center - upp * speed; } // down (camera moves up)
-	if (keystate[SDL_SCANCODE_D]) { eye = eye + right * speed; center = center + right * speed; } // right (camera moves left)
-	if (mouse_right_pressed) {
-		//modify center
-	}
+	if (keystate[SDL_SCANCODE_D]) { eye = eye + right * speed; center = center + right * speed; } // right (camera moves right)
+
+	// if (keystate[SDL_SCANCODE_W]) { eye = eye + forward * speed; center = center + forward * speed; };
+	// if (keystate[SDL_SCANCODE_S]) { eye = eye - forward * speed; center = center - forward * speed; };
+
+
 
 
 	camera.LookAt(eye, center, up);
@@ -149,7 +151,7 @@ void Application::Update(float seconds_elapsed)
 	// this->camera.SetAspectRatio(float(window_width) / float(window_height));
 	// this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
 
-	/*Matrix44 m;
+	Matrix44 m;
 	m.MakeRotationMatrix(seconds_elapsed, Vector3(0, 1, 0));
 	entities[0].Update(seconds_elapsed, m);
 
@@ -159,19 +161,30 @@ void Application::Update(float seconds_elapsed)
 			scale_growing = !scale_growing; // Change scale mode (grow or decreasse)
 			last_scale_trigger = int(time); // Update last trigger
 		}
+		float growth_rate = 1.25f;
+		float scale_factor;
 
 		if (scale_growing) {
-			m.MakeScaleMatrix(1.001f, 1.001f, 1.001f);
+			scale_factor = pow(growth_rate, seconds_elapsed);
+			
 		}
 		else {
-			m.MakeScaleMatrix(0.999f, 0.999f, 0.999f);
+			scale_factor = pow(1.0f / growth_rate, seconds_elapsed);
 		}
+		m.MakeScaleMatrix(scale_factor, scale_factor, scale_factor);
 		entities[1].Update(seconds_elapsed, m);
 
+		float amplitude = 0.25f;
+		float frequency = 3.0f;
 
-		m.MakeTranslationMatrix(0, 0.005 * sin(3 * time), 0);
+		float current = amplitude * sin(frequency * time);
+		float previous = amplitude * sin(frequency * (time - seconds_elapsed));
+
+		float delta = current - previous;
+
+		m.MakeTranslationMatrix(0, delta, 0);
 		entities[2].Update(seconds_elapsed, m);
-	}*/
+	}
 }
 
 
@@ -184,47 +197,43 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 	case SDLK_PLUS: {
 		switch (curr_property) {
 		case 1: {
-			if (px < (py - 0.5f)) {
-				px += 0.5;
+			if (p_near < (p_far - 0.5f)) {
+				p_near += 0.5f;
 			}
-			std::cout << px << " ";
 			break;
 		}
 		case 2: {
-			py += 0.5;
-			std::cout << py << " ";
+			p_far += 0.5;
 			break;
 		}
 		case 3: {
 			if (fov < 170) {
-				std::cout << "Fov increased!";
 				fov += 5;
 			}
 			break;
 		}
 		}
 		this->camera.SetAspectRatio(float(window_width) / float(window_height));
-		this->camera.SetPerspective(fov, this->camera.aspect, px, py);
+		this->camera.SetPerspective(fov, this->camera.aspect, p_near, p_far);
 		this->camera.LookAt(eye, center, up);
 
 		break;
 	}
 	case SDLK_MINUS: {
 		if (curr_property == 1) {
-			px -= 0.5;
-			if (px < 0.05) px = 0.05;
-			std::cout << px << " ";
+			p_near -= 0.5f;
+			if (p_near < 0.05f) p_near = 0.05f;
+			if (p_near >= p_far - 0.05f) p_near = p_far - 0.05f;
 		}
 		else if (curr_property == 2) {
-			py -= 0.5;
-			if (py <= px) py = px + 1;
-			std::cout << py << " ";
+			p_far -= 0.5f;
+			if (p_far <= p_near) p_far = p_near + 1;
 		}
 		else {
 			if (fov > 0) fov -= 5;	//Avoid faces turning upside down
 		}
 		this->camera.SetAspectRatio(float(window_width) / float(window_height));
-		this->camera.SetPerspective(fov, this->camera.aspect, px, py);
+		this->camera.SetPerspective(fov, this->camera.aspect, p_near, p_far);
 		this->camera.LookAt(eye, center, up);
 		break;
 	}
@@ -257,6 +266,11 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 		use_interpolation = !use_interpolation;
 		break;
 	}
+	case SDLK_w: {
+		use_wireframe = !use_wireframe;
+		break;
+	}
+
 	}
 }
 
