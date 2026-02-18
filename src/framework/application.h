@@ -10,6 +10,7 @@
 #include "button.h"
 #include "particleSystem.h"
 #include "entity.h"
+#include "shader.h"
 
 class Application
 {
@@ -49,6 +50,12 @@ public:
 	bool use_texture = true;
 	bool use_interpolation = true;
 	bool use_wireframe = false;
+
+	// Lab 4
+
+	Shader* shader;
+	Mesh* mesh;
+
 
 	// ------------------
 

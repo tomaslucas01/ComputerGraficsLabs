@@ -1,6 +1,5 @@
 #include "application.h"
 #include "mesh.h"
-#include "shader.h"
 #include "utils.h" 
 
 Application::Application(const char* caption, int width, int height)
@@ -38,21 +37,6 @@ Application::Application(const char* caption, int width, int height)
 	pitch = asin(dir.y);
 
 
-	/*this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
-
-	Matrix44 anna_m = Matrix44();
-	int scale = 20;
-	anna_m.MakeScaleMatrix(scale, scale, scale);
-	anna_m.M[3][1] = -3;
-
-	Matrix44 cleo_m = anna_m;
-	Matrix44 lee_m = anna_m;
-
-	anna_m.M[3][0] = -6;
-	lee_m.M[3][0] = 6;*/
-
-
-
 	// Perspective
 	curr_property = 1; //Initialize with camera near
 	p_near = 2.0f;
@@ -60,32 +44,14 @@ Application::Application(const char* caption, int width, int height)
 	fov = 60.0f;
 	this->camera.LookAt(eye, center, up);
 	this->camera.SetPerspective(fov, this->camera.aspect, p_near, p_far);
-
-	Matrix44 anna_m = Matrix44();
-	int scale = 6;
-	anna_m.MakeScaleMatrix(scale, scale, scale);
-	anna_m.M[3][1] = -3;
-
-	Matrix44 cleo_m = anna_m;
-	Matrix44 lee_m = anna_m;
-
-	anna_m.M[3][0] = -2;
-	anna_m.M[3][1] = -1;
-
-	cleo_m.M[3][1] = -1;
-	cleo_m.M[3][2] = -2;
-
-	lee_m.M[3][0] = 2;
-	lee_m.M[3][1] = -1;
-	lee_m.M[3][2] = -4;
-
-	Entity anna = Entity("../res/meshes/anna.obj", anna_m, "../res/textures/anna_color_specular.tga", true);
-	Entity cleo = Entity("../res/meshes/cleo.obj", cleo_m, "../res/textures/cleo_color_specular.tga", true);
-	Entity lee = Entity("../res/meshes/lee.obj", lee_m, "../res/textures/lee_color_specular.tga", true);
-
-	entities.push_back(anna);
-	entities.push_back(cleo);
-	entities.push_back(lee);
+	
+	// Lab 3
+	this->shader = Shader::Get("../res/shaders/quad.vs", "../res/shaders/quad.fs");
+	this->shader->SetFloat("width", float(width));
+	this->shader->SetFloat("height", float(height));
+	this->shader->SetVector2("center", Vector2(float(width) * 0.5, float(height) * 0.5));
+	this->mesh = new Mesh();
+	this->mesh->CreateQuad();
 }
 
 Application::~Application()
@@ -103,28 +69,20 @@ void Application::Init(void)
 // Render one frame
 void Application::Render(void)
 {
-	framebuffer.Fill(Color::WHITE);
-	zBuffer.Fill(1.0);
-
-	if (mode == 1) {
-		entities[0].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation, use_wireframe);
-	}
-
-	else if (mode == 2) {
-		entities[0].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation, use_wireframe);
-		entities[1].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation, use_wireframe);
-		entities[2].Render(&framebuffer, &camera, &zBuffer, use_texture, use_occlusion, use_interpolation, use_wireframe);
-	}
-
-	// Uncomment to see z-buffer
-	// framebuffer.DrawImage(zBuffer, 0, 0);
-
-	framebuffer.Render();
+	shader->Enable();
+	mesh->Render();
+	shader->Disable();
 }
 
 
 void Application::Update(float seconds_elapsed)
 {
+
+	// Lab 3
+
+
+
+	/*
 	// movement
 	float speed = 5 * seconds_elapsed;
 
@@ -184,15 +142,18 @@ void Application::Update(float seconds_elapsed)
 
 		m.MakeTranslationMatrix(0, delta, 0);
 		entities[2].Update(seconds_elapsed, m);
-	}
+	}*/
 }
 
 
 //keyboard press event 
 void Application::OnKeyPressed(SDL_KeyboardEvent event)
 {
+	// Lab 3
+
+
 	// KEY CODES: https://wiki.libsdl.org/SDL2/SDL_Keycode
-	switch (event.keysym.sym) {
+	/*switch (event.keysym.sym) {
 	case SDLK_ESCAPE: exit(0); break;
 	case SDLK_PLUS: {
 		switch (curr_property) {
@@ -271,7 +232,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 		break;
 	}
 
-	}
+	}*/
 }
 
 void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)
