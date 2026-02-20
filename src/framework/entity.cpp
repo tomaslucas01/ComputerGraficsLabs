@@ -5,14 +5,18 @@ Entity::Entity() {
 	this->matrix = Matrix44();
 	this->matrix.SetIdentity();
 	this->texture = new Image();
+	this->tex = new Texture();
+	this->shader = NULL;
 }
 
-Entity::Entity(const char * object, Matrix44 m, const char* texture, bool flipY) {
+Entity::Entity(const char * object, Matrix44 m, const char* texture, bool flipY, Shader* shader) {
 	this->mesh = new Mesh();
 	this->mesh->LoadOBJ(object);
 	this->matrix = m;
 	this->texture = new Image();
 	this->texture->LoadTGA(texture, flipY);
+	this->tex = Texture::Get(texture);
+	this->shader = shader;
 }
 
 void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer,
@@ -98,10 +102,15 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer,
 			);
 		}
 
-		// framebuffer->DrawTriangle(Vector2(space_x[0], space_y[0]), Vector2(space_x[1], space_y[1]), Vector2(space_x[2], space_y[2]), c, true, c);
-
-		
+		// framebuffer->DrawTriangle(Vector2(space_x[0], space_y[0]), Vector2(space_x[1], space_y[1]), Vector2(space_x[2], space_y[2]), c, true, c);	
 	}
+}
+
+void Entity::Render(Camera* camera) {
+	this->shader->SetMatrix44("u_model", matrix);
+	this->shader->SetTexture("u_texture", tex);
+	this->shader->SetMatrix44("u_viewprojection", camera->GetViewProjectionMatrix());
+	mesh->Render();
 }
 
 void Entity::Update(float seconds_elapsed, Matrix44 transform_matrix) {

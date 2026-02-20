@@ -44,14 +44,33 @@ Application::Application(const char* caption, int width, int height)
 	fov = 60.0f;
 	this->camera.LookAt(eye, center, up);
 	this->camera.SetPerspective(fov, this->camera.aspect, p_near, p_far);
+
 	
-	// Lab 3
+	// Quad render
+
+	// glEnable(GL_DEPTH_TEST);
+
 	this->shader = Shader::Get("../res/shaders/quad.vs", "../res/shaders/quad.fs");
-	this->shader->SetFloat("width", float(width));
-	this->shader->SetFloat("height", float(height));
-	this->shader->SetVector2("center", Vector2(float(width) * 0.5, float(height) * 0.5));
+	Texture* text = Texture::Get("../res/images/fruits.png");
+	this->shader->SetTexture("u_texture", text);
+
 	this->mesh = new Mesh();
 	this->mesh->CreateQuad();
+
+
+	// Entities render
+	
+	// this->shader = Shader::Get("../res/shaders/raster.vs", "../res/shaders/raster.fs");
+
+	// Entities init
+
+	Matrix44 anna_m = Matrix44();
+	int scale = 6;
+	anna_m.MakeScaleMatrix(scale, scale, scale);
+	anna_m.M[3][1] = -1;
+	Entity anna = Entity("../res/meshes/anna.obj", anna_m, "../res/textures/anna_color_specular.tga", true, this->shader);
+	entities.push_back(anna);
+
 }
 
 Application::~Application()
@@ -62,16 +81,25 @@ void Application::Init(void)
 {
 	std::cout << "Initiating app..." << std::endl;
 
-	framebuffer.Fill(Color::WHITE);
+	// framebuffer.Fill(Color::WHITE);
 }
 
 
 // Render one frame
 void Application::Render(void)
 {
+	// Quad render
 	shader->Enable();
+	shader->SetFloat("u_time", time);
 	mesh->Render();
 	shader->Disable();
+
+	// Entity render
+	/*shader->Enable();
+
+	entities[0].Render(&camera);
+
+	shader->Disable();*/
 }
 
 
@@ -153,7 +181,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 
 
 	// KEY CODES: https://wiki.libsdl.org/SDL2/SDL_Keycode
-	/*switch (event.keysym.sym) {
+	switch (event.keysym.sym) {
 	case SDLK_ESCAPE: exit(0); break;
 	case SDLK_PLUS: {
 		switch (curr_property) {
@@ -206,8 +234,8 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 		break;
 	}
 	case SDLK_f: {
-		std::cout << "Current Property = Camera Far\n";
-		curr_property = 2;
+		this->shader->SetFloat("mode", 1.0);
+		std::cout << "Change!";
 		break;
 	}
 	case SDLK_v: {
@@ -232,7 +260,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 		break;
 	}
 
-	}*/
+	}
 }
 
 void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)

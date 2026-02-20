@@ -1,7 +1,8 @@
 varying vec2 v_uv;
-uniform float width;
-uniform float height;
-uniform vec2 center;
+uniform sampler2D u_texture;
+
+uniform float mode;
+uniform float type;
 
 void main()
 {	
