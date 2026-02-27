@@ -10,7 +10,6 @@
 #include "button.h"
 #include "particleSystem.h"
 #include "entity.h"
-#include "shader.h"
 
 class Application
 {
@@ -55,6 +54,10 @@ public:
 
 	Shader* shader;
 	Mesh* mesh;
+
+	// Lab 5
+
+	sUniformData uniform_data;
 
 
 	// ------------------

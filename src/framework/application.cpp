@@ -48,7 +48,7 @@ Application::Application(const char* caption, int width, int height)
 	
 	// Quad render
 
-	// glEnable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);
 
 	this->shader = Shader::Get("../res/shaders/quad.vs", "../res/shaders/quad.fs");
 	Texture* text = Texture::Get("../res/images/fruits.png");
@@ -60,7 +60,7 @@ Application::Application(const char* caption, int width, int height)
 
 	// Entities render
 	
-	// this->shader = Shader::Get("../res/shaders/raster.vs", "../res/shaders/raster.fs");
+	this->shader = Shader::Get("../res/shaders/raster.vs", "../res/shaders/raster.fs");
 
 	// Entities init
 
@@ -68,8 +68,8 @@ Application::Application(const char* caption, int width, int height)
 	int scale = 6;
 	anna_m.MakeScaleMatrix(scale, scale, scale);
 	anna_m.M[3][1] = -1;
-	Entity anna = Entity("../res/meshes/anna.obj", anna_m, "../res/textures/anna_color_specular.tga", true, this->shader);
-	entities.push_back(anna);
+	//  anna = Entity("../res/meshes/anna.obj", anna_m, "../res/textures/anna_color_specular.tga", true, this->shader);
+	// entities.push_back(anna);
 
 }
 
@@ -89,17 +89,17 @@ void Application::Init(void)
 void Application::Render(void)
 {
 	// Quad render
-	shader->Enable();
+	/*shader->Enable();
 	shader->SetFloat("u_time", time);
 	mesh->Render();
-	shader->Disable();
+	shader->Disable();*/
 
 	// Entity render
-	/*shader->Enable();
+	// shader->Enable();
 
-	entities[0].Render(&camera);
+	// entities[0].Render(&camera);
 
-	shader->Disable();*/
+	// shader->Disable();
 }
 
 
