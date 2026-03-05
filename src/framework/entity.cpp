@@ -13,9 +13,7 @@ Entity::Entity(const char* object, Matrix44 m, const char* texture, const char* 
 	this->mesh->LoadOBJ(object);
 	this->matrix = m;
 
-	this->material.shader = shader;
-	this->material.color = Texture::Get(texture);
-	this->material.normal = Texture::Get(normal);
+	this->material = Material(shader, texture, normal);
 }
 
 
@@ -25,6 +23,8 @@ void Entity::Render(sUniformData& uniform_data) {
 	this->material.Enable(uniform_data);
 
 	this->mesh->Render();
+
+	this->material.Disable(uniform_data);
 }
 
 void Entity::Update(float seconds_elapsed, Matrix44 transform_matrix) {

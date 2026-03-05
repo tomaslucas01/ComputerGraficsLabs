@@ -10,8 +10,9 @@ typedef struct sLight {
 typedef struct sUniformData {
 	Matrix44* model_matrix;
 	Matrix44* viewprojection_matrix;
-	Vector3* ambient_light;
-	std::vector<sLight> scene_lights;
+	Vector3* eye_pos;
+	Vector3 ambient_light;
+	sLight scene_light;
 } sUniformData;
 
 class Material {

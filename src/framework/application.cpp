@@ -39,7 +39,7 @@ Application::Application(const char* caption, int width, int height)
 
 	// Perspective
 	curr_property = 1; //Initialize with camera near
-	p_near = 2.0f;
+	p_near = 0.5f;
 	p_far = 10.0f;
 	fov = 60.0f;
 	this->camera.LookAt(eye, center, up);
@@ -49,27 +49,69 @@ Application::Application(const char* caption, int width, int height)
 	// Quad render
 
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 
-	this->shader = Shader::Get("../res/shaders/quad.vs", "../res/shaders/quad.fs");
+
+	// Lights
+
+	ambient_light = Vector3(0.1, 0.05, 0.02);
+
+	sLight red_light;
+	red_light.intensity = Vector3(6, 0, 0);
+	red_light.pos = Vector3(2.5, 2, 2);
+
+	sLight green_light;
+	green_light.intensity = Vector3(0, 6, 0);
+	green_light.pos = Vector3(-2.5, -0.5, 2);
+
+	sLight blue_light;
+	blue_light.intensity = Vector3(0, 0, 6);
+	blue_light.pos = Vector3(0, 1, 2);
+
+	scene_lights.push_back(red_light);
+	scene_lights.push_back(green_light);
+	scene_lights.push_back(blue_light);
+
+
+	// Load shaders
+
+	this->gouraud_shader = Shader::Get("../res/shaders/gouraud.vs", "../res/shaders/gouraud.fs");
+	this->phong_shader = Shader::Get("../res/shaders/phong.vs", "../res/shaders/phong.fs");
+
+
+	// Quad init
+
 	Texture* text = Texture::Get("../res/images/fruits.png");
-	this->shader->SetTexture("u_texture", text);
+	this->quad_shader = Shader::Get("../res/shaders/quad.vs", "../res/shaders/quad.fs");
+	this->quad_shader->SetTexture("u_texture", text);
 
 	this->mesh = new Mesh();
 	this->mesh->CreateQuad();
-
-
-	// Entities render
-	
-	this->shader = Shader::Get("../res/shaders/raster.vs", "../res/shaders/raster.fs");
 
 	// Entities init
 
 	Matrix44 anna_m = Matrix44();
 	int scale = 6;
 	anna_m.MakeScaleMatrix(scale, scale, scale);
+	
+	Matrix44 cleo_m = anna_m;
+	Matrix44 lee_m = anna_m;
+
 	anna_m.M[3][1] = -1;
-	//  anna = Entity("../res/meshes/anna.obj", anna_m, "../res/textures/anna_color_specular.tga", true, this->shader);
-	// entities.push_back(anna);
+
+	cleo_m.M[3][0] = -3.5;
+	cleo_m.M[3][1] = -1;
+
+	lee_m.M[3][0] = 3.5;
+	lee_m.M[3][1] = -1;
+
+	Entity anna = Entity("../res/meshes/anna.obj", anna_m, "../res/textures/anna_color_specular.tga", "../res/textures/anna_normal.tga", this->phong_shader);
+	Entity cleo = Entity("../res/meshes/cleo.obj", cleo_m, "../res/textures/cleo_color_specular.tga", "../res/textures/cleo_normal.tga", this->phong_shader);
+	Entity lee = Entity("../res/meshes/lee.obj", lee_m, "../res/textures/lee_color_specular.tga", "../res/textures/lee_normal.tga", this->phong_shader);
+
+	entities.push_back(anna);
+	entities.push_back(cleo);
+	entities.push_back(lee);
 
 }
 
@@ -80,8 +122,6 @@ Application::~Application()
 void Application::Init(void)
 {
 	std::cout << "Initiating app..." << std::endl;
-
-	// framebuffer.Fill(Color::WHITE);
 }
 
 
@@ -100,15 +140,33 @@ void Application::Render(void)
 	// entities[0].Render(&camera);
 
 	// shader->Disable();
+
+	for (int i = 0; i < scene_lights.size(); ++i) {
+		if (i == 0) {
+			glDisable(GL_BLEND);
+		}
+		else {
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_ONE, GL_ONE);
+		}
+		for (Entity c : entities) {
+			uniform_data.model_matrix = &(c.matrix);
+			uniform_data.viewprojection_matrix = &(camera.viewprojection_matrix);
+			uniform_data.eye_pos = &eye;
+			// uniform_data.ambient_light = (i == 0 ? ambient_light : Vector3(0)); // Just render ambient on first light pass
+			uniform_data.ambient_light = ambient_light; // Just render ambient on first light pass
+			uniform_data.scene_light = scene_lights[i];
+			c.Render(uniform_data);
+		}
+	}
+	
+	
 }
 
 
 void Application::Update(float seconds_elapsed)
 {
-
 	// Lab 3
-
-
 
 	/*
 	// movement
@@ -137,39 +195,9 @@ void Application::Update(float seconds_elapsed)
 	// this->camera.SetAspectRatio(float(window_width) / float(window_height));
 	// this->camera.SetOrthographic(-orthographic_size * camera.aspect, orthographic_size * camera.aspect, orthographic_size, -orthographic_size, -10.f, 10.f); // Important to not stretch!
 
-	Matrix44 m;
-	m.MakeRotationMatrix(seconds_elapsed, Vector3(0, 1, 0));
-	entities[0].Update(seconds_elapsed, m);
-
 
 	if (mode == 2) {
-		if (int(time) % 3 == 0 && int(time) != last_scale_trigger) { // Every three seconds (and also check if not same instant where int(time) % 3 == 0
-			scale_growing = !scale_growing; // Change scale mode (grow or decreasse)
-			last_scale_trigger = int(time); // Update last trigger
-		}
-		float growth_rate = 1.25f;
-		float scale_factor;
-
-		if (scale_growing) {
-			scale_factor = pow(growth_rate, seconds_elapsed);
-			
-		}
-		else {
-			scale_factor = pow(1.0f / growth_rate, seconds_elapsed);
-		}
-		m.MakeScaleMatrix(scale_factor, scale_factor, scale_factor);
-		entities[1].Update(seconds_elapsed, m);
-
-		float amplitude = 0.25f;
-		float frequency = 3.0f;
-
-		float current = amplitude * sin(frequency * time);
-		float previous = amplitude * sin(frequency * (time - seconds_elapsed));
-
-		float delta = current - previous;
-
-		m.MakeTranslationMatrix(0, delta, 0);
-		entities[2].Update(seconds_elapsed, m);
+		
 	}*/
 }
 
@@ -234,7 +262,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 		break;
 	}
 	case SDLK_f: {
-		this->shader->SetFloat("mode", 1.0);
+		this->quad_shader->SetFloat("mode", 1.0);
 		std::cout << "Change!";
 		break;
 	}

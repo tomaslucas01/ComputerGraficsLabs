@@ -7,7 +7,6 @@
 #include "main/includes.h"
 #include "framework.h"
 #include "image.h"
-#include "button.h"
 #include "particleSystem.h"
 #include "entity.h"
 
@@ -52,12 +51,26 @@ public:
 
 	// Lab 4
 
-	Shader* shader;
-	Mesh* mesh;
+	Shader* quad_shader;
+	Mesh* mesh = new Mesh();
+
 
 	// Lab 5
 
+	Shader* phong_shader;
+	Shader* gouraud_shader;
+
 	sUniformData uniform_data;
+	Vector3 ambient_light;
+	std::vector<sLight> scene_lights;
+
+	enum ShaderType {
+		QUAD,
+		GOURAUD,
+		PHONG
+	};
+
+	ShaderType shader_type = QUAD;
 
 
 	// ------------------
