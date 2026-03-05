@@ -18,7 +18,7 @@ Entity::Entity(const char* object, Matrix44 m, const char* texture, const char* 
 
 
 void Entity::Render(sUniformData& uniform_data) {
-	uniform_data.model_matrix = &(this->matrix);
+	uniform_data.model_matrix = this->matrix;
 
 	this->material.Enable(uniform_data);
 

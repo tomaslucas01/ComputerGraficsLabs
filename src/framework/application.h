@@ -70,7 +70,9 @@ public:
 		PHONG
 	};
 
-	ShaderType shader_type = QUAD;
+	ShaderType shader_type = PHONG;
+	int nLights = 0;
+	bool use_specular_text = true;
 
 
 	// ------------------

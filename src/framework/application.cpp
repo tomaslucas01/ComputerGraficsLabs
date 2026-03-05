@@ -72,6 +72,8 @@ Application::Application(const char* caption, int width, int height)
 	scene_lights.push_back(green_light);
 	scene_lights.push_back(blue_light);
 
+	nLights = scene_lights.size();
+
 
 	// Load shaders
 
@@ -100,7 +102,7 @@ Application::Application(const char* caption, int width, int height)
 	anna_m.M[3][1] = -1;
 
 	cleo_m.M[3][0] = -3.5;
-	cleo_m.M[3][1] = -1;
+	cleo_m.M[3][1] = -1; 
 
 	lee_m.M[3][0] = 3.5;
 	lee_m.M[3][1] = -1;
@@ -122,6 +124,10 @@ Application::~Application()
 void Application::Init(void)
 {
 	std::cout << "Initiating app..." << std::endl;
+
+	for (int i = 0; i < entities.size(); ++i) {
+		entities[i].material.shader->SetInt("use_specular_text", (use_specular_text ? 1 : 0));
+	}
 }
 
 
@@ -141,7 +147,10 @@ void Application::Render(void)
 
 	// shader->Disable();
 
-	for (int i = 0; i < scene_lights.size(); ++i) {
+	uniform_data.viewprojection_matrix = camera.viewprojection_matrix;
+	uniform_data.eye_pos = eye;
+
+	for (int i = 0; i < nLights; ++i) {
 		if (i == 0) {
 			glDisable(GL_BLEND);
 		}
@@ -149,14 +158,12 @@ void Application::Render(void)
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_ONE, GL_ONE);
 		}
-		for (Entity c : entities) {
-			uniform_data.model_matrix = &(c.matrix);
-			uniform_data.viewprojection_matrix = &(camera.viewprojection_matrix);
-			uniform_data.eye_pos = &eye;
-			// uniform_data.ambient_light = (i == 0 ? ambient_light : Vector3(0)); // Just render ambient on first light pass
-			uniform_data.ambient_light = ambient_light; // Just render ambient on first light pass
+		for (int j = 0; j < entities.size(); ++j) {
+			uniform_data.model_matrix = entities[j].matrix;
+			uniform_data.ambient_light = (i == 0 ? ambient_light : Vector3(0)); // Just render ambient on first light pass
 			uniform_data.scene_light = scene_lights[i];
-			c.Render(uniform_data);
+			uniform_data.use_specular_text = use_specular_text;
+			entities[j].Render(uniform_data);
 		}
 	}
 	
@@ -254,16 +261,64 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 		this->camera.LookAt(eye, center, up);
 		break;
 	}
-	case SDLK_1: mode = 1; framebuffer.Fill(Color::BLACK); break;
-	case SDLK_2: mode = 2; framebuffer.Fill(Color::BLACK); break;
+	case SDLK_1: {
+		
+		if (shader_type == QUAD) {
+			// A
+		}
+		else {
+			if (shader_type == PHONG) {
+				nLights = 1;
+			}
+		}
+		break;
+	}
+	case SDLK_2: {
+		if (shader_type == QUAD) {
+			// A
+		}
+		else {
+			if (shader_type == PHONG) {
+				nLights = 2;
+			}
+		}
+		break;
+	}
+	case SDLK_3: {
+		if (shader_type == QUAD) {
+			// A
+		}
+		else {
+			if (shader_type == PHONG) {
+				nLights = 3;
+			}
+		}
+		break;
+	}
 	case SDLK_n: {
 		std::cout << "Current Property = Camera Near\n";
 		curr_property = 1;
 		break;
 	}
+	case SDLK_g: {
+		for (int i = 0; i < entities.size(); ++i) {
+			entities[i].material.shader = gouraud_shader;
+		}
+		break;
+	}
+	case SDLK_p: {
+		for (int i = 0; i < entities.size(); ++i) {
+			entities[i].material.shader = phong_shader;
+		}
+		break;
+	}
 	case SDLK_f: {
 		this->quad_shader->SetFloat("mode", 1.0);
 		std::cout << "Change!";
+		break;
+	}
+	case SDLK_s: {
+		use_specular_text = !use_specular_text;
 		break;
 	}
 	case SDLK_v: {
@@ -275,19 +330,6 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 		use_texture = !use_texture;
 		break;
 	}
-	case SDLK_z: {
-		use_occlusion = !use_occlusion;
-		break;
-	}
-	case SDLK_c: {
-		use_interpolation = !use_interpolation;
-		break;
-	}
-	case SDLK_w: {
-		use_wireframe = !use_wireframe;
-		break;
-	}
-
 	}
 }
 

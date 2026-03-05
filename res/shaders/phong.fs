@@ -14,6 +14,8 @@ uniform vec3 light_intensity;
 uniform vec3 light_pos;
 uniform vec3 eye_pos;
 
+uniform int use_specular_text;
+
 // This variables comes from the vertex shader
 // They are baricentric interpolated by pixel according to the distance to every vertex
 varying vec2 v_uv;
@@ -34,12 +36,18 @@ void main()
 
     vec3 L = normalize(light_pos - P);
     vec3 V = normalize(eye_pos - P);
-    vec3 R = normalize(2 * (clamp(dot(L, N), 0.0, 1.0) * N) - L);
+    vec3 R = normalize(2.0 * (clamp(dot(L, N), 0.0, 1.0) * N) - L);
 
     float d = distance(P, light_pos);
 
     vec3 Ip = text_col.xyz * clamp(dot(L, N), 0.0, 1.0); // To avoid negative dot product
-    Ip += text_col[3] * pow(clamp(dot(R, V), 0.0, 1.0), shininess);
+    
+    vec3 spec_col = (use_specular_text == 1)
+        ? vec3(text_col.a)
+        : k_specular;
+
+    Ip += spec_col * pow(clamp(dot(R, V), 0.0, 1.0), shininess);
+    
     Ip *= (light_intensity / (d * d));
     Ip += (text_col.xyz * ambient_intensity);
 

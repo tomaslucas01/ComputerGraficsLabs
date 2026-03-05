@@ -8,11 +8,12 @@ typedef struct sLight {
 } sLight;
 
 typedef struct sUniformData {
-	Matrix44* model_matrix;
-	Matrix44* viewprojection_matrix;
-	Vector3* eye_pos;
+	Matrix44 model_matrix;
+	Matrix44 viewprojection_matrix;
+	Vector3 eye_pos;
 	Vector3 ambient_light;
 	sLight scene_light;
+	bool use_specular_text;
 } sUniformData;
 
 class Material {
